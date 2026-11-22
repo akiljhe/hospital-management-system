@@ -1,3 +1,25 @@
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs) {
+  return twMerge(clsx(inputs));
+}
+
+const MONTHS_ID = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
+
 const DAYS_MAP = {
   0: 'Minggu',
   1: 'Senin',
@@ -8,6 +30,14 @@ const DAYS_MAP = {
   6: 'Sabtu',
 };
 
+export function toLocalDateISO(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export function getDayName(date) {
   const d = new Date(date);
   return DAYS_MAP[d.getDay()];
@@ -15,12 +45,19 @@ export function getDayName(date) {
 
 export function formatDate(date) {
   if (!date) return '-';
+
+  // String 'YYYY-MM-DD' diproses langsung agar tidak terdistorsi konversi timezone UTC
+  if (typeof date === 'string') {
+    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      const [, year, month, day] = match;
+      return `${Number(day)} ${MONTHS_ID[Number(month) - 1]} ${year}`;
+    }
+  }
+
   const d = new Date(date);
-  return d.toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  if (Number.isNaN(d.getTime())) return '-';
+  return `${d.getDate()} ${MONTHS_ID[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 export function formatTime(time) {
