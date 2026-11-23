@@ -13,6 +13,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const notifHandlerRef = useRef(null);
 
   const isDashboardRoute = [
     '/dashboard',
@@ -30,6 +31,24 @@ export default function Navbar() {
   useEffect(() => {
     fetchUser();
   }, [pathname]);
+
+  // Selalu simpan handler terbaru di ref untuk menghindari stale closure
+  useEffect(() => {
+    notifHandlerRef.current = (event) => {
+      const count = event?.detail?.unreadCount;
+      if (typeof count === 'number') {
+        setUnreadCount(Math.max(0, count));
+      } else {
+        fetchNotifications();
+      }
+    };
+  });
+
+  useEffect(() => {
+    const listener = (event) => notifHandlerRef.current?.(event);
+    window.addEventListener('notifications-updated', listener);
+    return () => window.removeEventListener('notifications-updated', listener);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -61,7 +80,7 @@ export default function Navbar() {
       const res = await fetch('/api/notifications?unread=true');
       const json = await res.json();
       if (res.ok) {
-        setUnreadCount(json.unreadCount !== undefined ? json.unreadCount : (json.data?.length || 0));
+        setUnreadCount(json.unreadCount || 0);
       }
     } catch {}
   }
@@ -92,22 +111,12 @@ export default function Navbar() {
                   <span className="text-base font-extrabold tracking-tight text-slate-900 leading-none">
                     RS Digital Sehat
                   </span>
-                  <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200/50">
-                    2026
-                  </span>
                 </div>
                 <p className="text-[11px] text-slate-400 font-medium leading-none mt-1 hidden sm:block">
                   Hospital Digitalization Platform
                 </p>
               </div>
             </Link>
-
-            {isDashboardRoute && user && (
-              <span className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 ml-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Portal {user.role?.toUpperCase()}
-              </span>
-            )}
           </div>
 
           {/* Desktop Center Navigation - Only on public pages */}
@@ -283,8 +292,10 @@ export default function Navbar() {
               </Link>
             )}
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 cursor-pointer"
+              aria-label={mobileMenuOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {mobileMenuOpen ? (
