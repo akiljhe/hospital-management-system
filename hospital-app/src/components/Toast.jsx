@@ -39,7 +39,7 @@ export default function Toast({ message, type = 'info', onClose }) {
       <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg ${typeStyles[type] || typeStyles.info}`}>
         {typeIcons[type]}
         <p className="text-sm font-medium">{message}</p>
-        <button onClick={onClose} className="ml-2 hover:opacity-70 transition-opacity">
+        <button type="button" onClick={onClose} aria-label="Tutup notifikasi" className="ml-2 hover:opacity-70 transition-opacity cursor-pointer">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
