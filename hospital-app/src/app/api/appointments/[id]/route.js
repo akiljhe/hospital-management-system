@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { validateRequired, sanitize } from '@/lib/validation';
+import { formatDate } from '@/lib/utils';
 
 export async function GET(request, { params }) {
   try {
@@ -69,7 +70,8 @@ export async function PUT(request, { params }) {
 
     // Ambil janji temu saat ini
     const currentResult = await query(
-      `SELECT jt.*, u_doc.nama_lengkap as doctor_name
+      `SELECT jt.*, TO_CHAR(jt.tanggal_booking, 'YYYY-MM-DD') as tanggal_booking_str,
+              u_doc.nama_lengkap as doctor_name
        FROM janji_temu jt
        JOIN users u_doc ON jt.dokter_id = u_doc.id
        WHERE jt.id = $1`,
@@ -126,24 +128,30 @@ export async function PUT(request, { params }) {
     const updated = updateResult.rows[0];
 
     // Kirim notifikasi ke pasien jika Approved atau Rejected
+    const doctorName = appointment.doctor_name || '';
+    const doctorDisplayName = /^dr\.?/i.test(doctorName) ? doctorName : `Dr. ${doctorName}`;
+    const bookingDateLabel = formatDate(appointment.tanggal_booking_str || appointment.tanggal_booking);
+
     if (status === 'Approved') {
       await query(
-        `INSERT INTO notifikasi (user_id, judul, pesan)
-         VALUES ($1, $2, $3)`,
+        `INSERT INTO notifikasi (user_id, judul, pesan, link)
+         VALUES ($1, $2, $3, $4)`,
         [
           appointment.pasien_id,
           'Janji Temu Disetujui',
-          `Janji temu Anda dengan Dr. ${appointment.doctor_name} pada tanggal ${appointment.tanggal_booking.toISOString().substring(0, 10)} telah disetujui.`,
+          `Janji temu Anda dengan ${doctorDisplayName} pada tanggal ${bookingDateLabel} telah disetujui.`,
+          '/appointments',
         ]
       );
     } else if (status === 'Rejected') {
       await query(
-        `INSERT INTO notifikasi (user_id, judul, pesan)
-         VALUES ($1, $2, $3)`,
+        `INSERT INTO notifikasi (user_id, judul, pesan, link)
+         VALUES ($1, $2, $3, $4)`,
         [
           appointment.pasien_id,
           'Janji Temu Ditolak',
-          `Janji temu Anda dengan Dr. ${appointment.doctor_name} pada tanggal ${appointment.tanggal_booking.toISOString().substring(0, 10)} ditolak. Alasan: ${alasan_penolakan}`,
+          `Janji temu Anda dengan ${doctorDisplayName} pada tanggal ${bookingDateLabel} ditolak. Alasan: ${alasan_penolakan}`,
+          '/appointments',
         ]
       );
     }

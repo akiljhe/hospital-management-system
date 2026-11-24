@@ -50,12 +50,13 @@ export async function PUT(request, { params }) {
       // Kirim notifikasi ke pasien jika Siap Diambil
       if (status === 'Siap Diambil') {
         await query(
-          `INSERT INTO notifikasi (user_id, judul, pesan)
-           VALUES ($1, $2, $3)`,
+          `INSERT INTO notifikasi (user_id, judul, pesan, link)
+           VALUES ($1, $2, $3, $4)`,
           [
             prescription.pasien_id,
             'Resep Obat Siap Diambil',
             'Resep obat Anda telah disiapkan oleh bagian farmasi dan sekarang siap untuk diambil di loket obat.',
+            '/pharmacy',
           ]
         );
       }

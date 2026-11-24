@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { validateRequired, sanitize } from '@/lib/validation';
+import { formatDate } from '@/lib/utils';
 
 const DAY_MAP = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -145,12 +146,13 @@ export async function POST(request) {
 
     // Notifikasi in-app untuk dokter: ada janji temu baru
     await query(
-      `INSERT INTO notifikasi (user_id, judul, pesan)
-       VALUES ($1, $2, $3)`,
+      `INSERT INTO notifikasi (user_id, judul, pesan, link)
+       VALUES ($1, $2, $3, $4)`,
       [
         schedule.dokter_id,
         'Janji Temu Baru',
-        `Pasien ${auth.user.name || auth.user.nama_lengkap} membuat janji temu baru untuk tanggal ${tanggal_booking} (${schedule.jam_mulai.substring(0, 5)} - ${schedule.jam_selesai.substring(0, 5)}).`,
+        `Pasien ${auth.user.name || auth.user.nama_lengkap} membuat janji temu baru untuk tanggal ${formatDate(tanggal_booking)} (${schedule.jam_mulai.substring(0, 5)} - ${schedule.jam_selesai.substring(0, 5)}).`,
+        '/appointments',
       ]
     );
 
