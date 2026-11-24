@@ -1,39 +1,12 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
 import DashboardLayout from '@/components/DashboardLayout';
-import LoadingSpinner from '@/components/LoadingSpinner';
 
-export default function Layout({ children }) {
-  const router = useRouter();
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (!res.ok) {
-          router.push('/login');
-          return;
-        }
-      } catch {
-        router.push('/login');
-        return;
-      } finally {
-        setChecking(false);
-      }
-    }
-    checkAuth();
-  }, [router]);
-
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner />
-      </div>
-    );
+export default async function Layout({ children }) {
+  const user = await getSession();
+  if (!user) {
+    redirect('/login');
   }
 
-  return <DashboardLayout>{children}</DashboardLayout>;
+  return <DashboardLayout initialUser={user}>{children}</DashboardLayout>;
 }
