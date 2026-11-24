@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { toLocalDateISO } from '@/lib/utils';
 
 const DAY_MAP = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -14,7 +15,7 @@ export async function GET() {
     const role = auth.user.role;
     const today = new Date();
     const todayName = DAY_MAP[today.getDay()];
-    const todayStr = today.toISOString().substring(0, 10);
+    const todayStr = toLocalDateISO(today);
 
     if (role === 'admin') {
       // 1. Jumlah janji Pending

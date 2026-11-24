@@ -14,7 +14,7 @@ export async function GET(request) {
 
     let sql = `
       SELECT id, user_id, judul, judul as title, pesan, pesan as message, 
-             sudah_dibaca, sudah_dibaca as is_read, created_at
+             sudah_dibaca, sudah_dibaca as is_read, link, created_at
       FROM notifikasi
       WHERE user_id = $1
     `;

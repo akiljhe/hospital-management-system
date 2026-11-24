@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const user = await getSession();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ user: null, authenticated: false }, { status: 200 });
     }
 
     let roleData = {};
