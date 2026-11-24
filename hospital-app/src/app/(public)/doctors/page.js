@@ -42,9 +42,15 @@ function DoctorsContent() {
     : doctors;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="min-h-screen bg-mesh-subtle flex flex-col relative selection:bg-indigo-100 selection:text-indigo-900">
+      {/* Ambient halos */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-32 left-1/4 h-96 w-96 rounded-full bg-indigo-400/10 blur-3xl" />
+        <div className="absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-cyan-400/10 blur-3xl" />
+        <div className="absolute -bottom-32 left-1/2 h-96 w-96 rounded-full bg-teal-400/10 blur-3xl" />
+      </div>
       <Navbar />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1 w-full">
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1 w-full">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-teal-600 bg-teal-50 px-2.5 py-1 rounded-md mb-2">
@@ -59,8 +65,9 @@ function DoctorsContent() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            <label className="text-xs font-bold text-slate-700 whitespace-nowrap">Filter Poli:</label>
+            <label htmlFor="filterPoliPage" className="text-xs font-bold text-slate-700 whitespace-nowrap">Filter Poli:</label>
             <select
+              id="filterPoliPage"
               value={selectedPoli}
               onChange={(e) => setSelectedPoli(e.target.value)}
               className="text-xs font-semibold bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-2xs"
@@ -87,7 +94,7 @@ function DoctorsContent() {
             {filteredDoctors.map((doc) => (
               <div
                 key={doc.id}
-                className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-lg transition-all flex flex-col justify-between"
+                className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-lg hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
               >
                 <div className="p-6">
                   <div className="flex items-start gap-4 border-b border-slate-100 pb-4 mb-4">
