@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Modal from '@/components/Modal';
 import Toast from '@/components/Toast';
+import ConfirmModal from '@/components/ConfirmModal';
 import { PlusIcon, UsersIcon, PhoneIcon, SearchIcon } from '@/components/Icons';
 
 export default function UsersManagementPage() {
@@ -13,6 +14,23 @@ export default function UsersManagementPage() {
   const [roleFilter, setRoleFilter] = useState('semua');
   const [searchTerm, setSearchTerm] = useState('');
   const [toast, setToast] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  function closeConfirm() {
+    if (!confirmLoading) setConfirmConfig(null);
+  }
+
+  async function runConfirm() {
+    if (!confirmConfig?.onConfirm) return;
+    setConfirmLoading(true);
+    try {
+      await confirmConfig.onConfirm();
+    } finally {
+      setConfirmLoading(false);
+      setConfirmConfig(null);
+    }
+  }
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -114,8 +132,18 @@ export default function UsersManagementPage() {
     }
   }
 
-  async function handleDelete(userId, userName) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus pengguna "${userName}"?`)) return;
+  function handleDelete(userId, userName) {
+    setConfirmConfig({
+      title: 'Hapus Pengguna?',
+      message: `Apakah Anda yakin ingin menghapus pengguna "${userName}"? Akun ini akan kehilangan akses ke sistem secara permanen.`,
+      confirmText: 'Ya, Hapus',
+      cancelText: 'Batal',
+      type: 'danger',
+      onConfirm: () => executeDelete(userId),
+    });
+  }
+
+  async function executeDelete(userId) {
 
     try {
       const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
@@ -149,6 +177,17 @@ export default function UsersManagementPage() {
   return (
     <div className="space-y-6 pb-12">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <ConfirmModal
+        isOpen={!!confirmConfig}
+        onClose={closeConfirm}
+        onConfirm={runConfirm}
+        title={confirmConfig?.title}
+        message={confirmConfig?.message}
+        confirmText={confirmConfig?.confirmText}
+        cancelText={confirmConfig?.cancelText}
+        type={confirmConfig?.type}
+        loading={confirmLoading}
+      />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

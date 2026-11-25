@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Modal from '@/components/Modal';
 import Toast from '@/components/Toast';
+import ConfirmModal from '@/components/ConfirmModal';
 import { PlusIcon, PillIcon, CheckIcon, AlertCircleIcon, XCircleIcon, SearchIcon } from '@/components/Icons';
+import { formatDate, toLocalDateISO } from '@/lib/utils';
 
 export default function MedicinesPage() {
   const [medicines, setMedicines] = useState([]);
@@ -12,6 +14,23 @@ export default function MedicinesPage() {
   const [activeFilter, setActiveFilter] = useState('semua');
   const [searchTerm, setSearchTerm] = useState('');
   const [toast, setToast] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  function closeConfirm() {
+    if (!confirmLoading) setConfirmConfig(null);
+  }
+
+  async function runConfirm() {
+    if (!confirmConfig?.onConfirm) return;
+    setConfirmLoading(true);
+    try {
+      await confirmConfig.onConfirm();
+    } finally {
+      setConfirmLoading(false);
+      setConfirmConfig(null);
+    }
+  }
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,8 +122,18 @@ export default function MedicinesPage() {
     }
   }
 
-  async function handleDelete(id, name) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus data obat "${name}"?`)) return;
+  function handleDelete(id, name) {
+    setConfirmConfig({
+      title: 'Hapus Data Obat?',
+      message: `Apakah Anda yakin ingin menghapus data obat "${name}"? Data yang dihapus tidak dapat dikembalikan.`,
+      confirmText: 'Ya, Hapus',
+      cancelText: 'Batal',
+      type: 'danger',
+      onConfirm: () => executeDelete(id, name),
+    });
+  }
+
+  async function executeDelete(id) {
 
     try {
       const res = await fetch(`/api/medicines/${id}`, { method: 'DELETE' });
@@ -121,7 +150,7 @@ export default function MedicinesPage() {
     }
   }
 
-  const todayStr = new Date().toISOString().substring(0, 10);
+  const todayStr = toLocalDateISO();
 
   const filteredMedicines = medicines.filter((m) => {
     if (searchTerm.trim()) {
@@ -136,6 +165,17 @@ export default function MedicinesPage() {
   return (
     <div className="space-y-6 pb-12">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <ConfirmModal
+        isOpen={!!confirmConfig}
+        onClose={closeConfirm}
+        onConfirm={runConfirm}
+        title={confirmConfig?.title}
+        message={confirmConfig?.message}
+        confirmText={confirmConfig?.confirmText}
+        cancelText={confirmConfig?.cancelText}
+        type={confirmConfig?.type}
+        loading={confirmLoading}
+      />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -271,11 +311,7 @@ export default function MedicinesPage() {
                                 : 'text-slate-700'
                             }
                           >
-                            {new Date(med.tanggal_kadaluarsa).toLocaleDateString('id-ID', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
+                            {formatDate(med.tanggal_kadaluarsa)}
                           </span>
                         ) : (
                           <span className="text-slate-400">-</span>

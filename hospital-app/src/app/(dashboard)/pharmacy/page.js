@@ -4,14 +4,33 @@ import { useState, useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import StatusBadge from '@/components/StatusBadge';
 import Toast from '@/components/Toast';
+import ConfirmModal from '@/components/ConfirmModal';
 import { FlaskIcon, PhoneIcon, CheckIcon, PackageIcon } from '@/components/Icons';
 
 export default function PharmacyPage() {
+  const [user, setUser] = useState(null);
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Semua');
   const [processingId, setProcessingId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  function closeConfirm() {
+    if (!confirmLoading) setConfirmConfig(null);
+  }
+
+  async function runConfirm() {
+    if (!confirmConfig?.onConfirm) return;
+    setConfirmLoading(true);
+    try {
+      await confirmConfig.onConfirm();
+    } finally {
+      setConfirmLoading(false);
+      setConfirmConfig(null);
+    }
+  }
 
   useEffect(() => {
     loadPrescriptions();
@@ -19,8 +38,13 @@ export default function PharmacyPage() {
 
   async function loadPrescriptions() {
     try {
-      const res = await fetch('/api/prescriptions');
+      const [meRes, res] = await Promise.all([
+        fetch('/api/auth/me'),
+        fetch('/api/prescriptions'),
+      ]);
+      const meJson = await meRes.json();
       const json = await res.json();
+      setUser(meJson.user || meJson.data || null);
       setPrescriptions(json.prescriptions || json.data || []);
     } catch (err) {
       console.error('Failed to load prescriptions:', err);
@@ -29,14 +53,23 @@ export default function PharmacyPage() {
     }
   }
 
-  async function handleStatusChange(prescriptionId, nextStatus) {
+  function handleStatusChange(prescriptionId, nextStatus) {
     const confirmationText =
       nextStatus === 'Siap Diambil'
         ? 'Tandai resep ini SIAP DIAMBIL? Sistem otomatis memotong stok obat di gudang via database trigger.'
         : 'Konfirmasi penyerahan obat: Tandai resep SUDAH DIAMBIL oleh pasien?';
 
-    if (!confirm(confirmationText)) return;
+    setConfirmConfig({
+      title: nextStatus === 'Siap Diambil' ? 'Tandai Resep Siap Diambil?' : 'Konfirmasi Penyerahan Obat?',
+      message: confirmationText,
+      confirmText: nextStatus === 'Siap Diambil' ? 'Ya, Siapkan & Potong Stok' : 'Ya, Sudah Diserahkan',
+      cancelText: 'Batal',
+      type: 'success',
+      onConfirm: () => executeStatusChange(prescriptionId, nextStatus),
+    });
+  }
 
+  async function executeStatusChange(prescriptionId, nextStatus) {
     setProcessingId(prescriptionId);
     try {
       const res = await fetch(`/api/prescriptions/${prescriptionId}`, {
@@ -75,6 +108,17 @@ export default function PharmacyPage() {
   return (
     <div className="space-y-6 pb-12">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <ConfirmModal
+        isOpen={!!confirmConfig}
+        onClose={closeConfirm}
+        onConfirm={runConfirm}
+        title={confirmConfig?.title}
+        message={confirmConfig?.message}
+        confirmText={confirmConfig?.confirmText}
+        cancelText={confirmConfig?.cancelText}
+        type={confirmConfig?.type}
+        loading={confirmLoading}
+      />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -82,10 +126,16 @@ export default function PharmacyPage() {
             Dispensasi & Apotek
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Manajemen Farmasi & Resep Obat
+            {user?.role === 'admin' ? 'Manajemen Farmasi & Resep Obat' : 'Status Resep & Obat Saya'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Alur peracikan obat terintegrasi: <span className="font-semibold text-slate-700">Menunggu Diproses</span> → <span className="font-semibold text-slate-700">Siap Diambil</span> (stok terpotong otomatis) → <span className="font-semibold text-slate-700">Sudah Diambil</span>.
+            {user?.role === 'admin' ? (
+              <>
+                Alur peracikan obat terintegrasi: <span className="font-semibold text-slate-700">Menunggu Diproses</span> → <span className="font-semibold text-slate-700">Siap Diambil</span> (stok terpotong otomatis) → <span className="font-semibold text-slate-700">Sudah Diambil</span>.
+              </>
+            ) : (
+              'Pantau proses penyiapan dan pengambilan resep obat Anda di loket farmasi rumah sakit.'
+            )}
           </p>
         </div>
       </div>
@@ -201,9 +251,9 @@ export default function PharmacyPage() {
                 </div>
               </div>
 
-              {/* Tombol Perubahan Status (Admin) */}
+              {/* Status / Tombol Perubahan Status */}
               <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
-                {p.status === 'Menunggu Diproses' && (
+                {user?.role === 'admin' && p.status === 'Menunggu Diproses' && (
                   <button
                     onClick={() => handleStatusChange(p.id, 'Siap Diambil')}
                     disabled={processingId === p.id}
@@ -214,7 +264,7 @@ export default function PharmacyPage() {
                   </button>
                 )}
 
-                {p.status === 'Siap Diambil' && (
+                {user?.role === 'admin' && p.status === 'Siap Diambil' && (
                   <button
                     onClick={() => handleStatusChange(p.id, 'Sudah Diambil')}
                     disabled={processingId === p.id}
@@ -223,6 +273,18 @@ export default function PharmacyPage() {
                     <PackageIcon className="w-4 h-4" />
                     <span>{processingId === p.id ? 'Memproses...' : 'Serahkan ke Pasien'}</span>
                   </button>
+                )}
+
+                {user?.role !== 'admin' && p.status === 'Menunggu Diproses' && (
+                  <span className="text-xs font-bold text-amber-700 flex items-center gap-1 bg-amber-50 px-3 py-1 rounded-xl">
+                    Menunggu Peracikan Apotek
+                  </span>
+                )}
+
+                {user?.role !== 'admin' && p.status === 'Siap Diambil' && (
+                  <span className="text-xs font-bold text-emerald-700 flex items-center gap-1 bg-emerald-50 px-3 py-1 rounded-xl">
+                    <CheckIcon className="w-4 h-4" /> Siap Diambil di Loket Apotek
+                  </span>
                 )}
 
                 {p.status === 'Sudah Diambil' && (

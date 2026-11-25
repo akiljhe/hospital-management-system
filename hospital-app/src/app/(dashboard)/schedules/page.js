@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Modal from '@/components/Modal';
 import Toast from '@/components/Toast';
+import ConfirmModal from '@/components/ConfirmModal';
 import { PlusIcon, XIcon, ClockIcon } from '@/components/Icons';
 
 const DAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
@@ -14,6 +15,23 @@ export default function SchedulesPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  function closeConfirm() {
+    if (!confirmLoading) setConfirmConfig(null);
+  }
+
+  async function runConfirm() {
+    if (!confirmConfig?.onConfirm) return;
+    setConfirmLoading(true);
+    try {
+      await confirmConfig.onConfirm();
+    } finally {
+      setConfirmLoading(false);
+      setConfirmConfig(null);
+    }
+  }
   const [submitting, setSubmitting] = useState(false);
 
   // Form
@@ -84,8 +102,18 @@ export default function SchedulesPage() {
     }
   }
 
-  async function handleDelete(id) {
-    if (!confirm('Apakah Anda yakin ingin menghapus slot jadwal ini?')) return;
+  function handleDelete(id) {
+    setConfirmConfig({
+      title: 'Hapus Slot Jadwal?',
+      message: 'Apakah Anda yakin ingin menghapus slot jadwal praktik ini? Pasien tidak akan dapat memesan slot ini lagi.',
+      confirmText: 'Ya, Hapus',
+      cancelText: 'Batal',
+      type: 'danger',
+      onConfirm: () => executeDelete(id),
+    });
+  }
+
+  async function executeDelete(id) {
 
     try {
       const res = await fetch(`/api/schedules/${id}`, { method: 'DELETE' });
@@ -107,6 +135,17 @@ export default function SchedulesPage() {
   return (
     <div className="space-y-6 pb-12">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <ConfirmModal
+        isOpen={!!confirmConfig}
+        onClose={closeConfirm}
+        onConfirm={runConfirm}
+        title={confirmConfig?.title}
+        message={confirmConfig?.message}
+        confirmText={confirmConfig?.confirmText}
+        cancelText={confirmConfig?.cancelText}
+        type={confirmConfig?.type}
+        loading={confirmLoading}
+      />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

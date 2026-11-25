@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Modal from '@/components/Modal';
 import Toast from '@/components/Toast';
+import ConfirmModal from '@/components/ConfirmModal';
 import { PlusIcon, PoliIcon } from '@/components/Icons';
 
 export default function PolyclinicsManagementPage() {
@@ -12,6 +13,23 @@ export default function PolyclinicsManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPoli, setEditingPoli] = useState(null);
   const [toast, setToast] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  function closeConfirm() {
+    if (!confirmLoading) setConfirmConfig(null);
+  }
+
+  async function runConfirm() {
+    if (!confirmConfig?.onConfirm) return;
+    setConfirmLoading(true);
+    try {
+      await confirmConfig.onConfirm();
+    } finally {
+      setConfirmLoading(false);
+      setConfirmConfig(null);
+    }
+  }
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -85,8 +103,18 @@ export default function PolyclinicsManagementPage() {
     }
   }
 
-  async function handleDelete(id, name) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus poliklinik "${name}"?`)) return;
+  function handleDelete(id, name) {
+    setConfirmConfig({
+      title: 'Hapus Poliklinik?',
+      message: `Apakah Anda yakin ingin menghapus poliklinik "${name}"? Data yang dihapus tidak dapat dikembalikan.`,
+      confirmText: 'Ya, Hapus',
+      cancelText: 'Batal',
+      type: 'danger',
+      onConfirm: () => executeDelete(id),
+    });
+  }
+
+  async function executeDelete(id) {
 
     try {
       const res = await fetch(`/api/polyclinics/${id}`, { method: 'DELETE' });
@@ -108,6 +136,17 @@ export default function PolyclinicsManagementPage() {
   return (
     <div className="space-y-6 pb-12">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <ConfirmModal
+        isOpen={!!confirmConfig}
+        onClose={closeConfirm}
+        onConfirm={runConfirm}
+        title={confirmConfig?.title}
+        message={confirmConfig?.message}
+        confirmText={confirmConfig?.confirmText}
+        cancelText={confirmConfig?.cancelText}
+        type={confirmConfig?.type}
+        loading={confirmLoading}
+      />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
