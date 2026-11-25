@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Toast from '@/components/Toast';
 import {
@@ -14,6 +15,7 @@ import {
 } from '@/components/Icons';
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -44,11 +46,46 @@ export default function NotificationsPage() {
         body: JSON.stringify({ all: true }),
       });
       if (res.ok) {
+        setNotifications((prev) =>
+          prev.map((item) => ({ ...item, sudah_dibaca: true, is_read: true }))
+        );
+        setUnreadCount(0);
+        window.dispatchEvent(new CustomEvent('notifications-updated', { detail: { unreadCount: 0 } }));
         setToast({ message: 'Semua notifikasi ditandai sudah dibaca', type: 'success' });
-        loadNotifications();
       }
     } catch {
       setToast({ message: 'Gagal memperbarui notifikasi', type: 'error' });
+    }
+  }
+
+  async function handleNotifClick(n) {
+    const isUnread = !n.sudah_dibaca && !n.is_read;
+
+    if (isUnread) {
+      const newCount = Math.max(0, unreadCount - 1);
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item.id === n.id ? { ...item, sudah_dibaca: true, is_read: true } : item
+        )
+      );
+      setUnreadCount(newCount);
+      window.dispatchEvent(
+        new CustomEvent('notifications-updated', { detail: { unreadCount: newCount } })
+      );
+
+      try {
+        await fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: [n.id] }),
+        });
+      } catch (err) {
+        console.error('Failed to mark notification as read:', err);
+      }
+    }
+
+    if (n.link) {
+      router.push(n.link);
     }
   }
 
@@ -91,49 +128,68 @@ export default function NotificationsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              className={`p-5 rounded-3xl border transition-all ${
-                !n.sudah_dibaca && !n.is_read
-                  ? 'bg-indigo-50/50 border-indigo-200 shadow-sm'
-                  : 'bg-white border-slate-200/80 shadow-2xs'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3.5">
-                  <div className="mt-0.5 p-2 rounded-xl bg-slate-50 shrink-0">
-                    {n.judul?.includes('Disetujui') || n.title?.includes('Disetujui') ? (
-                      <CheckCircleIcon className="w-5 h-5 text-emerald-600" />
-                    ) : n.judul?.includes('Ditolak') || n.title?.includes('Ditolak') ? (
-                      <XCircleIcon className="w-5 h-5 text-rose-600" />
-                    ) : n.judul?.includes('Resep') || n.title?.includes('Resep') ? (
-                      <PillIcon className="w-5 h-5 text-teal-600" />
-                    ) : (
-                      <AlertCircleIcon className="w-5 h-5 text-indigo-600" />
-                    )}
+          {notifications.map((n) => {
+            const isUnread = !n.sudah_dibaca && !n.is_read;
+            return (
+              <div
+                key={n.id}
+                onClick={() => handleNotifClick(n)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleNotifClick(n);
+                  }
+                }}
+                className={`p-5 rounded-3xl border transition-all cursor-pointer hover:shadow-md hover:-translate-y-0.5 ${
+                  isUnread
+                    ? 'bg-indigo-50/50 border-indigo-200 shadow-sm'
+                    : 'bg-white border-slate-200/80 shadow-2xs hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3.5">
+                    <div className="mt-0.5 p-2 rounded-xl bg-slate-50 shrink-0">
+                      {n.judul?.includes('Disetujui') || n.title?.includes('Disetujui') ? (
+                        <CheckCircleIcon className="w-5 h-5 text-emerald-600" />
+                      ) : n.judul?.includes('Ditolak') || n.title?.includes('Ditolak') ? (
+                        <XCircleIcon className="w-5 h-5 text-rose-600" />
+                      ) : n.judul?.includes('Resep') || n.title?.includes('Resep') ? (
+                        <PillIcon className="w-5 h-5 text-teal-600" />
+                      ) : (
+                        <AlertCircleIcon className="w-5 h-5 text-indigo-600" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm text-slate-900">{n.judul || n.title}</h3>
+                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">{n.pesan || n.message}</p>
+                      <div className="mt-2.5 flex items-center gap-3">
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {new Date(n.created_at).toLocaleString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                        {n.link && (
+                          <span className="text-[11px] font-bold text-indigo-600">
+                            Lihat detail -&gt;
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-extrabold text-sm text-slate-900">{n.judul || n.title}</h3>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">{n.pesan || n.message}</p>
-                    <span className="text-[10px] text-slate-400 mt-2.5 inline-block font-mono">
-                      {new Date(n.created_at).toLocaleString('id-ID', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
-                </div>
 
-                {!n.sudah_dibaca && !n.is_read && (
-                  <span className="h-2.5 w-2.5 rounded-full bg-indigo-600 shrink-0 mt-1 ring-4 ring-indigo-100" />
-                )}
+                  {isUnread && (
+                    <span className="h-2.5 w-2.5 rounded-full bg-indigo-600 shrink-0 mt-1 ring-4 ring-indigo-100" />
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

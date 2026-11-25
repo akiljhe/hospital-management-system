@@ -6,7 +6,9 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import StatusBadge from '@/components/StatusBadge';
 import Modal from '@/components/Modal';
 import Toast from '@/components/Toast';
+import ConfirmModal from '@/components/ConfirmModal';
 import { CalendarIcon, CheckIcon, XIcon } from '@/components/Icons';
+import { formatDate } from '@/lib/utils';
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState([]);
@@ -14,6 +16,23 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Semua');
   const [toast, setToast] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  function closeConfirm() {
+    if (!confirmLoading) setConfirmConfig(null);
+  }
+
+  async function runConfirm() {
+    if (!confirmConfig?.onConfirm) return;
+    setConfirmLoading(true);
+    try {
+      await confirmConfig.onConfirm();
+    } finally {
+      setConfirmLoading(false);
+      setConfirmConfig(null);
+    }
+  }
 
   // Modal Reject
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -44,8 +63,18 @@ export default function AppointmentsPage() {
     }
   }
 
-  async function handleApprove(appointmentId) {
-    if (!confirm('Apakah Anda yakin ingin menyetujui (Approve) janji temu ini?')) return;
+  function handleApprove(appointmentId) {
+    setConfirmConfig({
+      title: 'Setujui Janji Temu?',
+      message: 'Apakah Anda yakin ingin menyetujui (Approve) janji temu ini? Pasien akan menerima notifikasi persetujuan.',
+      confirmText: 'Ya, Setujui',
+      cancelText: 'Batal',
+      type: 'success',
+      onConfirm: () => executeApprove(appointmentId),
+    });
+  }
+
+  async function executeApprove(appointmentId) {
 
     setActionLoading(true);
     try {
@@ -106,8 +135,18 @@ export default function AppointmentsPage() {
     }
   }
 
-  async function handleCancel(appointmentId) {
-    if (!confirm('Apakah Anda yakin ingin membatalkan janji temu ini?')) return;
+  function handleCancel(appointmentId) {
+    setConfirmConfig({
+      title: 'Batalkan Janji Temu?',
+      message: 'Apakah Anda yakin ingin membatalkan janji temu ini? Tindakan ini tidak dapat dibatalkan.',
+      confirmText: 'Ya, Batalkan',
+      cancelText: 'Batal',
+      type: 'danger',
+      onConfirm: () => executeCancel(appointmentId),
+    });
+  }
+
+  async function executeCancel(appointmentId) {
 
     setActionLoading(true);
     try {
@@ -144,6 +183,17 @@ export default function AppointmentsPage() {
   return (
     <div className="space-y-6 pb-12">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <ConfirmModal
+        isOpen={!!confirmConfig}
+        onClose={closeConfirm}
+        onConfirm={runConfirm}
+        title={confirmConfig?.title}
+        message={confirmConfig?.message}
+        confirmText={confirmConfig?.confirmText}
+        cancelText={confirmConfig?.cancelText}
+        type={confirmConfig?.type}
+        loading={confirmLoading}
+      />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -233,11 +283,7 @@ export default function AppointmentsPage() {
                   <tr key={app.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="py-4 px-5 whitespace-nowrap">
                       <div className="font-extrabold text-slate-900 text-sm">
-                        {new Date(app.tanggal_booking).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
+                        {formatDate(app.tanggal_booking)}
                       </div>
                       <div className="text-xs font-mono text-indigo-600 font-bold mt-0.5">
                         {app.hari}, {app.jam_mulai?.substring(0, 5)} - {app.jam_selesai?.substring(0, 5)}
@@ -356,12 +402,7 @@ export default function AppointmentsPage() {
             Anda akan menolak janji temu untuk pasien{' '}
             <b className="text-slate-900">{selectedAppointment?.patient_name}</b> pada tanggal{' '}
             <b className="text-slate-900">
-              {selectedAppointment &&
-                new Date(selectedAppointment.tanggal_booking).toLocaleDateString('id-ID', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
+              {selectedAppointment && formatDate(selectedAppointment.tanggal_booking)}
             </b>
             . Berikan alasan penolakan yang jelas untuk pasien.
           </p>

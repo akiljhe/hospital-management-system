@@ -6,6 +6,7 @@ import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Toast from '@/components/Toast';
 import { CheckIcon, PoliIcon, DoctorIcon, CalendarIcon } from '@/components/Icons';
+import { toLocalDateISO } from '@/lib/utils';
 
 const DAY_MAP = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -495,7 +496,7 @@ function NewAppointmentContent() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <input
                 type="date"
-                min={new Date().toISOString().substring(0, 10)}
+                min={toLocalDateISO()}
                 value={appointmentDate}
                 onChange={handleDateChange}
                 required
