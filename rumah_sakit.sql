@@ -236,7 +236,8 @@ CREATE TABLE notifications (
   type        VARCHAR(50) NOT NULL DEFAULT 'info',
   related_id  UUID,
   is_read     BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at  TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+  link         TEXT
 );
 
 CREATE INDEX idx_notifikasi_user ON notifications (user_id, is_read);
@@ -677,10 +678,3 @@ INSERT INTO medicines (name, description, type, unit, stock, expiry_date) VALUES
   ('Antasida Doen',     'Obat maag kombinasi',                   'biasa', 'tablet',   0, '2027-04-30'),
   ('Simvastatin 20mg',  'Obat penurun kolesterol',               'keras', 'tablet', 150, '2026-03-15');
 
-
--- =====================================================================
--- PENGECEKAN CEPAT (opsional, jalankan setelah skema berhasil)
--- =====================================================================
--- SELECT COUNT(*) AS poli FROM polyclinics;             -- harus 4
--- SELECT COUNT(*) AS jadwal FROM doctor_schedules;      -- harus 13
--- SELECT name, status_obat FROM v_status_obat;          -- cek filter obat
