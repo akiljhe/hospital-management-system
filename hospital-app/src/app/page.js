@@ -49,23 +49,59 @@ export default function HomePage() {
     : doctors;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="min-h-screen bg-mesh-subtle flex flex-col relative selection:bg-indigo-100 selection:text-indigo-900">
+      {/* Ambient halos */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-32 left-1/4 h-96 w-96 rounded-full bg-indigo-400/10 blur-3xl" />
+        <div className="absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-cyan-400/10 blur-3xl" />
+        <div className="absolute -bottom-32 left-1/2 h-96 w-96 rounded-full bg-teal-400/10 blur-3xl" />
+      </div>
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white py-16 sm:py-24">
-        {/* Subtle background glow */}
-        <div className="absolute top-0 right-1/4 -translate-y-1/2 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 translate-y-1/2 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white py-16 sm:py-24 border-b border-indigo-950/60">
+        {/* Top Border Glow Lightbeam */}
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Ambient Vibrant Glow Orbs */}
+        <div className="absolute top-0 right-1/4 -translate-y-1/3 w-[550px] h-[550px] bg-indigo-500/25 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-0 left-10 translate-y-1/3 w-[500px] h-[500px] bg-teal-500/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute top-1/2 right-10 -translate-y-1/2 w-80 h-80 bg-cyan-400/15 rounded-full blur-[80px] pointer-events-none" />
+
+        {/* Medical Technology Grid Pattern Overlay */}
+        <div 
+          className="absolute inset-0 opacity-[0.16] pointer-events-none mix-blend-screen"
+          style={{
+            backgroundImage: `radial-gradient(circle at center, rgba(56, 189, 248, 0.6) 1.5px, transparent 1.5px), linear-gradient(to right, rgba(99, 102, 241, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.15) 1px, transparent 1px)`,
+            backgroundSize: `32px 32px, 32px 32px, 32px 32px`
+          }}
+        />
+
+        {/* Futuristic Concentric Radial Rings (Medical Radar / Scan Graphic) */}
+        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] opacity-[0.07] pointer-events-none">
+          <svg className="w-full h-full text-indigo-300" viewBox="0 0 600 600" fill="none">
+            <circle cx="300" cy="300" r="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="6 6" />
+            <circle cx="300" cy="300" r="180" stroke="currentColor" strokeWidth="1.5" />
+            <circle cx="300" cy="300" r="260" stroke="currentColor" strokeWidth="1.5" strokeDasharray="8 8" />
+          </svg>
+        </div>
+
+        {/* Dynamic ECG Heartbeat Waveform in Hero Background */}
+        <div className="absolute bottom-4 inset-x-0 h-28 opacity-10 pointer-events-none overflow-hidden">
+          <svg className="w-full h-full text-teal-400" viewBox="0 0 1200 100" fill="none" preserveAspectRatio="none">
+            <path
+              d="M0 50 H300 L320 25 L340 75 L360 5 L380 95 L400 40 L415 55 L430 50 H750 L770 20 L790 80 L810 0 L830 100 L850 45 L865 60 L880 50 H1200"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
             <div className="max-w-2xl text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-indigo-200 border border-white/10 mb-6 backdrop-blur-md">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Sistem Digitalisasi Rumah Sakit 2026
-              </div>
-
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15] text-white">
                 Layanan Kesehatan Terpadu,{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-indigo-200 to-sky-300">
@@ -189,7 +225,7 @@ export default function HomePage() {
                   <div
                     key={p.id}
                     onClick={() => setSelectedPoli(isSelected ? '' : String(p.id))}
-                    className={`group relative p-6 rounded-3xl transition-all duration-200 cursor-pointer ${
+                    className={`group relative p-6 rounded-3xl transition-all duration-200 hover:-translate-y-1 cursor-pointer ${
                       isSelected
                         ? 'bg-white ring-2 ring-indigo-600 shadow-lg shadow-indigo-600/10'
                         : 'bg-white hover:bg-white/80 border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-indigo-300'
@@ -274,7 +310,7 @@ export default function HomePage() {
               {filteredDoctors.map((doc) => (
                 <div
                   key={doc.id}
-                  className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-lg hover:border-slate-300 transition-all flex flex-col justify-between"
+                  className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-lg hover:border-slate-300 hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between"
                 >
                   <div className="p-6">
                     <div className="flex items-start gap-4">
