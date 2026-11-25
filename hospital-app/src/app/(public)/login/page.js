@@ -3,13 +3,19 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Plus, Footprints, Crown, Stethoscope, User, Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import Toast from '@/components/Toast';
-import { WalkIcon, CrownIcon, StethoscopeIcon, UserIcon } from '@/components/Icons';
+import ShaderBackground from '@/components/ui/ShaderBackground';
+
+const INPUT_CLASS =
+  'w-full text-sm rounded-xl bg-slate-950/60 border border-white/10 text-white placeholder-slate-400 px-3.5 py-3 transition-colors focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/30';
+const LABEL_CLASS = 'block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5';
 
 export default function LoginPage() {
   const router = useRouter();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -52,94 +58,107 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="relative isolate min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-cyan-400/30 selection:text-white">
+      <ShaderBackground className="-z-10" />
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center px-4 sm:px-0">
         <Link href="/" className="inline-flex items-center gap-3 group">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white font-black shadow-md group-hover:scale-105 transition-transform">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-            </svg>
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white shadow-lg shadow-indigo-900/40 ring-1 ring-white/20 group-hover:scale-105 transition-transform">
+            <Plus className="w-6 h-6" strokeWidth={2.75} />
           </div>
           <div className="text-left">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xl font-extrabold tracking-tight text-slate-900 leading-none">
-                RS Digital Sehat
-              </span>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-200/50">
-                2026
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 font-medium leading-none mt-1">
+            <span className="block text-xl font-extrabold tracking-tight text-white leading-none">
+              RS Digital Sehat
+            </span>
+            <p className="text-xs text-slate-400 font-medium leading-none mt-1.5">
               Hospital Digitalization Platform
             </p>
           </div>
         </Link>
-        <h2 className="mt-6 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <h2 className="mt-7 text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
           Masuk ke Akun Anda
         </h2>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-sm text-slate-400">
           Belum punya akun?{' '}
-          <Link href="/register" className="font-bold text-indigo-600 hover:text-indigo-500">
+          <Link href="/register" className="font-bold text-cyan-300 hover:text-cyan-200 transition-colors">
             Daftar akun pasien baru
           </Link>
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 sm:px-9 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06)] border border-slate-200/80 rounded-3xl">
+        <div className="relative overflow-hidden bg-slate-900/65 backdrop-blur-2xl border border-white/15 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_30px_-5px_rgba(99,102,241,0.3)] py-8 px-6 sm:px-9">
+          {/* Top Border Glow Lightbeam */}
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
+
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label htmlFor="identifier" className={LABEL_CLASS}>
                 Email atau Username
               </label>
               <input
+                id="identifier"
                 type="text"
+                autoComplete="username"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="cth. admin, dr_sarah, johndoe"
                 required
-                className="w-full text-xs rounded-xl border border-slate-300 p-3 text-slate-900 shadow-2xs focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={INPUT_CLASS}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label htmlFor="password" className={LABEL_CLASS}>
                 Password
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full text-xs rounded-xl border border-slate-300 p-3 text-slate-900 shadow-2xs focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className={`${INPUT_CLASS} pr-11`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer"
+                  aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer mt-2"
+              className="group relative mt-2 w-full overflow-hidden flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-teal-500 shadow-lg shadow-indigo-900/40 hover:shadow-indigo-500/30 transition-shadow disabled:opacity-60 cursor-pointer"
             >
-              {loading ? 'Memproses Masuk...' : 'Masuk ke Sistem'}
+              <span className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/35 to-transparent transition-[left] duration-700 ease-out group-hover:left-[120%]" />
+              {loading && <LoaderCircle className="relative h-4 w-4 animate-spin" />}
+              <span className="relative">{loading ? 'Memproses Masuk...' : 'Masuk ke Sistem'}</span>
             </button>
           </form>
 
           {/* Tombol Lanjutkan sebagai Tamu (Guest Requirement) */}
-          <div className="mt-6 border-t border-slate-100 pt-5">
+          <div className="mt-6 border-t border-white/10 pt-5">
             <Link
               href="/"
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-200 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
             >
-              <WalkIcon className="w-4 h-4 text-slate-500" />
+              <Footprints className="w-4 h-4 text-slate-400" />
               <span>Lanjutkan sebagai Tamu (Guest Mode)</span>
             </Link>
           </div>
 
           {/* Akun Demo Cepat */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
+          <div className="mt-6 pt-5 border-t border-white/10">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 text-center">
               Akun Uji Evaluasi (1-Klik Isi):
             </p>
@@ -147,25 +166,25 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => fillDemoAccount('admin', 'admin123')}
-                className="py-2 px-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/60 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                className="py-2 px-2 bg-purple-950/40 hover:bg-purple-900/50 text-purple-200 border border-purple-400/25 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <CrownIcon className="w-3.5 h-3.5" />
+                <Crown className="w-3.5 h-3.5" />
                 <span>Admin</span>
               </button>
               <button
                 type="button"
                 onClick={() => fillDemoAccount('dr_sarah', 'dokter123')}
-                className="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/60 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                className="py-2 px-2 bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-200 border border-cyan-400/25 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <StethoscopeIcon className="w-3.5 h-3.5" />
+                <Stethoscope className="w-3.5 h-3.5" />
                 <span>Dokter</span>
               </button>
               <button
                 type="button"
                 onClick={() => fillDemoAccount('johndoe', 'pasien123')}
-                className="py-2 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/60 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                className="py-2 px-2 bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-200 border border-emerald-400/25 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <UserIcon className="w-3.5 h-3.5" />
+                <User className="w-3.5 h-3.5" />
                 <span>Pasien</span>
               </button>
             </div>
