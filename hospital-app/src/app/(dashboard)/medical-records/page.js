@@ -102,7 +102,7 @@ function MedicalRecordsContent() {
     const validItems = prescriptionItems
       .filter((item) => item.obat_id && parseInt(item.jumlah, 10) > 0)
       .map((item) => ({
-        obat_id: parseInt(item.obat_id, 10),
+        obat_id: item.obat_id,
         jumlah: parseInt(item.jumlah, 10),
       }));
 
@@ -112,7 +112,7 @@ function MedicalRecordsContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          janji_temu_id: parseInt(selectedAppointmentId, 10),
+          janji_temu_id: selectedAppointmentId,
           diagnosis: diagnosis.trim(),
           tindakan: tindakan.trim(),
           catatan: catatan.trim(),

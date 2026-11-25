@@ -12,11 +12,16 @@ export async function DELETE(request, { params }) {
     const { id } = await params;
 
     // Pastikan schedule milik dokter ini jika bukan admin
-    let checkSql = 'SELECT * FROM jadwal_dokter WHERE id = $1';
+    let checkSql = `
+      SELECT ds.id 
+      FROM doctor_schedules ds
+      JOIN doctors d ON ds.doctor_id = d.id
+      WHERE ds.id = $1
+    `;
     let checkParams = [id];
 
     if (auth.user.role === 'dokter') {
-      checkSql += ' AND dokter_id = $2';
+      checkSql += ' AND d.user_id = $2';
       checkParams.push(auth.user.id);
     }
 
@@ -27,7 +32,7 @@ export async function DELETE(request, { params }) {
 
     // Cek apakah ada janji temu aktif di jadwal ini
     const activeApp = await query(
-      "SELECT id FROM janji_temu WHERE jadwal_id = $1 AND status IN ('Pending', 'Approved')",
+      "SELECT id FROM appointments WHERE schedule_id = $1 AND status IN ('Pending', 'Approved')",
       [id]
     );
 
@@ -38,7 +43,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    await query('DELETE FROM jadwal_dokter WHERE id = $1', [id]);
+    await query('DELETE FROM doctor_schedules WHERE id = $1', [id]);
 
     return NextResponse.json({ message: 'Jadwal berhasil dihapus' });
   } catch (error) {

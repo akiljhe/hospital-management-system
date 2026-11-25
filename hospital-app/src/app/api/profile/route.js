@@ -12,12 +12,12 @@ export async function GET() {
     }
 
     const result = await query(
-      `SELECT u.id, u.username, u.email, u.nama_lengkap, u.nama_lengkap as name, 
-              u.role, u.telepon, u.telepon as phone, u.alamat, u.alamat as address, u.foto, u.created_at,
-              d.poli_id, p.nama_poli as polyclinic_name
+      `SELECT u.id, u.email, u.name as nama_lengkap, u.name, 
+              u.role, u.phone as telepon, u.phone, u.address as alamat, u.address, u.created_at,
+              d.polyclinic_id as poli_id, p.name as polyclinic_name
        FROM users u
-       LEFT JOIN dokter d ON u.id = d.user_id
-       LEFT JOIN poli p ON d.poli_id = p.id
+       LEFT JOIN doctors d ON u.id = d.user_id
+       LEFT JOIN polyclinics p ON d.polyclinic_id = p.id
        WHERE u.id = $1`,
       [auth.user.id]
     );
@@ -26,7 +26,9 @@ export async function GET() {
       return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 });
     }
 
-    return NextResponse.json({ user: result.rows[0] });
+    const row = result.rows[0];
+    row.username = row.email.split('@')[0];
+    return NextResponse.json({ user: row });
   } catch (error) {
     console.error('Get profile error:', error);
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });
@@ -65,26 +67,28 @@ export async function PUT(request) {
       const hashedPassword = await bcrypt.hash(password, 10);
       await query(
         `UPDATE users
-         SET nama_lengkap = $1, email = $2, telepon = $3, alamat = $4, password_hash = $5
+         SET name = $1, email = $2, phone = $3, address = $4, password = $5, updated_at = NOW()
          WHERE id = $6`,
         [nama_lengkap, email.toLowerCase(), telepon || null, alamat || null, hashedPassword, auth.user.id]
       );
     } else {
       await query(
         `UPDATE users
-         SET nama_lengkap = $1, email = $2, telepon = $3, alamat = $4
+         SET name = $1, email = $2, phone = $3, address = $4, updated_at = NOW()
          WHERE id = $5`,
         [nama_lengkap, email.toLowerCase(), telepon || null, alamat || null, auth.user.id]
       );
     }
 
     const updated = await query(
-      `SELECT id, username, email, nama_lengkap, nama_lengkap as name, role, telepon, telepon as phone, alamat, alamat as address 
+      `SELECT id, email, name, name as nama_lengkap, role, phone as telepon, phone, address as alamat, address 
        FROM users WHERE id = $1`,
       [auth.user.id]
     );
 
-    return NextResponse.json({ user: updated.rows[0], message: 'Profil berhasil diperbarui' });
+    const userRow = updated.rows[0];
+    userRow.username = userRow.email.split('@')[0];
+    return NextResponse.json({ user: userRow, message: 'Profil berhasil diperbarui' });
   } catch (error) {
     console.error('Update profile error:', error);
     return NextResponse.json({ error: error.message || 'Terjadi kesalahan server' }, { status: 500 });

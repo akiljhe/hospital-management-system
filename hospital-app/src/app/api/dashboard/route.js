@@ -19,21 +19,21 @@ export async function GET() {
 
     if (role === 'admin') {
       // 1. Jumlah janji Pending
-      const pendingResult = await query("SELECT COUNT(*) as count FROM janji_temu WHERE status = 'Pending'");
+      const pendingResult = await query("SELECT COUNT(*) as count FROM appointments WHERE status = 'Pending'");
       
       // 2. Antrean farmasi (Menunggu Diproses dan Siap Diambil)
-      const menungguResult = await query("SELECT COUNT(*) as count FROM resep WHERE status = 'Menunggu Diproses'");
-      const siapResult = await query("SELECT COUNT(*) as count FROM resep WHERE status = 'Siap Diambil'");
+      const menungguResult = await query("SELECT COUNT(*) as count FROM prescriptions WHERE status = 'Menunggu Diproses'");
+      const siapResult = await query("SELECT COUNT(*) as count FROM prescriptions WHERE status = 'Siap Diambil'");
 
       // 3. Daftar dokter yang bertugas hari ini
       const doctorsTodayResult = await query(
-        `SELECT DISTINCT u.id, u.nama_lengkap as name, p.nama_poli as polyclinic_name, jd.jam_mulai, jd.jam_selesai
-         FROM jadwal_dokter jd
-         JOIN users u ON jd.dokter_id = u.id
-         JOIN dokter d ON jd.dokter_id = d.user_id
-         LEFT JOIN poli p ON d.poli_id = p.id
-         WHERE jd.hari = $1
-         ORDER BY jd.jam_mulai ASC`,
+        `SELECT DISTINCT u.id, u.name, p.name as polyclinic_name, ds.start_time as jam_mulai, ds.end_time as jam_selesai
+         FROM doctor_schedules ds
+         JOIN doctors d ON ds.doctor_id = d.id
+         JOIN users u ON d.user_id = u.id
+         LEFT JOIN polyclinics p ON d.polyclinic_id = p.id
+         WHERE ds.day = $1 AND ds.is_active = true
+         ORDER BY ds.start_time ASC`,
         [todayName]
       );
 
@@ -57,43 +57,65 @@ export async function GET() {
         userCounts,
       });
     } else if (role === 'dokter') {
+      let doctorId = auth.user.doctor_id;
+      if (!doctorId) {
+        const docRes = await query('SELECT id FROM doctors WHERE user_id = $1', [auth.user.id]);
+        if (docRes.rows.length > 0) {
+          doctorId = docRes.rows[0].id;
+        }
+      }
+
+      if (!doctorId) {
+        return NextResponse.json({
+          role: 'dokter',
+          pendingAppointments: 0,
+          todayApproved: [],
+          todayApprovedCount: 0,
+          recentPatients: [],
+          mySchedules: [],
+        });
+      }
+
       // 1. Jumlah janji Pending untuknya
       const pendingResult = await query(
-        "SELECT COUNT(*) as count FROM janji_temu WHERE dokter_id = $1 AND status = 'Pending'",
-        [auth.user.id]
+        "SELECT COUNT(*) as count FROM appointments WHERE doctor_id = $1 AND status = 'Pending'",
+        [doctorId]
       );
 
       // 2. Janji Approved hari ini
       const approvedTodayResult = await query(
-        `SELECT jt.id, jt.tanggal_booking, jt.keluhan_singkat as keluhan,
-                u_pat.nama_lengkap as patient_name, u_pat.telepon as patient_phone,
-                jd.jam_mulai, jd.jam_selesai
-         FROM janji_temu jt
-         JOIN users u_pat ON jt.pasien_id = u_pat.id
-         JOIN jadwal_dokter jd ON jt.jadwal_id = jd.id
-         WHERE jt.dokter_id = $1 AND jt.status = 'Approved' AND jt.tanggal_booking = $2
-         ORDER BY jd.jam_mulai ASC`,
-        [auth.user.id, todayStr]
+        `SELECT a.id, a.appointment_date as tanggal_booking, a.complaint as keluhan,
+                u_pat.name as patient_name, u_pat.phone as patient_phone,
+                ds.start_time as jam_mulai, ds.end_time as jam_selesai
+         FROM appointments a
+         JOIN patients pat ON a.patient_id = pat.id
+         JOIN users u_pat ON pat.user_id = u_pat.id
+         JOIN doctor_schedules ds ON a.schedule_id = ds.id
+         WHERE a.doctor_id = $1 AND a.status = 'Approved' AND a.appointment_date = $2
+         ORDER BY ds.start_time ASC`,
+        [doctorId, todayStr]
       );
 
-      // 3. 5 pasien terbaru yang diperiksa (ada di rekam_medis)
+      // 3. 5 pasien terbaru yang diperiksa (ada di medical_records)
       const recentPatientsResult = await query(
-        `SELECT rm.id, rm.created_at, rm.diagnosis,
-                u_pat.nama_lengkap as patient_name, u_pat.telepon as patient_phone,
-                jt.tanggal_booking
-         FROM rekam_medis rm
-         JOIN users u_pat ON rm.pasien_id = u_pat.id
-         JOIN janji_temu jt ON rm.janji_temu_id = jt.id
-         WHERE rm.dokter_id = $1
-         ORDER BY rm.created_at DESC
+        `SELECT mr.id, mr.created_at, mr.diagnosis,
+                u_pat.name as patient_name, u_pat.phone as patient_phone,
+                a.appointment_date as tanggal_booking
+         FROM medical_records mr
+         JOIN patients pat ON mr.patient_id = pat.id
+         JOIN users u_pat ON pat.user_id = u_pat.id
+         JOIN appointments a ON mr.appointment_id = a.id
+         WHERE mr.doctor_id = $1
+         ORDER BY mr.created_at DESC
          LIMIT 5`,
-        [auth.user.id]
+        [doctorId]
       );
 
       // Akses cepat ke jadwal dokter
       const schedulesResult = await query(
-        `SELECT * FROM jadwal_dokter WHERE dokter_id = $1 ORDER BY hari, jam_mulai`,
-        [auth.user.id]
+        `SELECT id, doctor_id, day as hari, start_time as jam_mulai, end_time as jam_selesai, is_active 
+         FROM doctor_schedules WHERE doctor_id = $1 ORDER BY day, start_time`,
+        [doctorId]
       );
 
       return NextResponse.json({
@@ -105,38 +127,58 @@ export async function GET() {
         mySchedules: schedulesResult.rows,
       });
     } else if (role === 'pasien') {
+      let patientId = auth.user.patient_id;
+      if (!patientId) {
+        const patRes = await query('SELECT id FROM patients WHERE user_id = $1', [auth.user.id]);
+        if (patRes.rows.length > 0) {
+          patientId = patRes.rows[0].id;
+        }
+      }
+
+      if (!patientId) {
+        return NextResponse.json({
+          role: 'pasien',
+          latestAppointment: null,
+          approvedNotifications: [],
+          readyPrescriptions: [],
+        });
+      }
+
       // 1. Status janji terakhir
       const latestAppointmentResult = await query(
-        `SELECT jt.*, u_doc.nama_lengkap as doctor_name, p.nama_poli as polyclinic_name,
-                jd.hari, jd.jam_mulai, jd.jam_selesai
-         FROM janji_temu jt
-         JOIN users u_doc ON jt.dokter_id = u_doc.id
-         JOIN dokter d ON jt.dokter_id = d.user_id
-         LEFT JOIN poli p ON d.poli_id = p.id
-         JOIN jadwal_dokter jd ON jt.jadwal_id = jd.id
-         WHERE jt.pasien_id = $1
-         ORDER BY jt.created_at DESC
+        `SELECT a.id, a.appointment_date as tanggal_booking, a.status, a.complaint as keluhan_singkat, a.rejection_reason as catatan_dokter,
+                u_doc.name as doctor_name, p.name as polyclinic_name,
+                ds.day as hari, ds.start_time as jam_mulai, ds.end_time as jam_selesai
+         FROM appointments a
+         JOIN doctors d ON a.doctor_id = d.id
+         JOIN users u_doc ON d.user_id = u_doc.id
+         LEFT JOIN polyclinics p ON d.polyclinic_id = p.id
+         JOIN doctor_schedules ds ON a.schedule_id = ds.id
+         WHERE a.patient_id = $1
+         ORDER BY a.created_at DESC
          LIMIT 1`,
-        [auth.user.id]
+        [patientId]
       );
 
       // 2. Notifikasi janji yang disetujui
       const approvedNotificationsResult = await query(
-        `SELECT * FROM notifikasi 
-         WHERE user_id = $1 AND (judul ILIKE '%disetujui%' OR judul ILIKE '%approved%')
+        `SELECT id, title as judul, message as pesan, is_read as dibaca, link, created_at
+         FROM notifications 
+         WHERE user_id = $1 AND (title ILIKE '%disetujui%' OR title ILIKE '%approved%')
          ORDER BY created_at DESC LIMIT 5`,
         [auth.user.id]
       );
 
       // 3. Resep yang siap diambil
       const readyPrescriptionsResult = await query(
-        `SELECT r.id, r.status, r.tanggal_siap, rm.diagnosis, u_doc.nama_lengkap as doctor_name
-         FROM resep r
-         JOIN rekam_medis rm ON r.rekam_medis_id = rm.id
-         JOIN users u_doc ON rm.dokter_id = u_doc.id
-         WHERE rm.pasien_id = $1 AND r.status = 'Siap Diambil'
-         ORDER BY r.tanggal_siap DESC`,
-        [auth.user.id]
+        `SELECT pr.id, pr.status, pr.ready_at as tanggal_siap, mr.diagnosis, u_doc.name as doctor_name
+         FROM prescriptions pr
+         JOIN medical_records mr ON pr.medical_record_id = mr.id
+         JOIN doctors d ON mr.doctor_id = d.id
+         JOIN users u_doc ON d.user_id = u_doc.id
+         WHERE mr.patient_id = $1 AND pr.status = 'Siap Diambil'
+         ORDER BY pr.ready_at DESC`,
+        [patientId]
       );
 
       return NextResponse.json({

@@ -6,33 +6,33 @@ import { validateRequired, sanitize } from '@/lib/validation';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const filter = searchParams.get('filter'); // 'available', 'unavailable', 'expired', or 'semua'
+    const filter = searchParams.get('filter') || searchParams.get('status');
 
     let sql = `
-      SELECT id, nama_obat, nama_obat as name, 
-             deskripsi, deskripsi as description, 
-             tipe, tipe as unit, 
-             stok, stok as stock, 
-             gambar,
-             tanggal_kadaluarsa, tanggal_kadaluarsa as expiry_date,
+      SELECT id, name, name as nama_obat, 
+             description, description as deskripsi, 
+             type as tipe, unit, 
+             stock as stok, stock,
+             image as gambar,
+             expiry_date as tanggal_kadaluarsa, expiry_date,
              created_at
-      FROM obat
+      FROM medicines
     `;
     const whereClauses = [];
 
     if (filter === 'available' || filter === 'tersedia') {
-      whereClauses.push('stok > 0 AND (tanggal_kadaluarsa IS NULL OR tanggal_kadaluarsa >= CURRENT_DATE)');
+      whereClauses.push('stock > 0 AND (expiry_date IS NULL OR expiry_date >= CURRENT_DATE)');
     } else if (filter === 'unavailable' || filter === 'tidak_tersedia') {
-      whereClauses.push('stok = 0');
+      whereClauses.push('stock = 0');
     } else if (filter === 'expired' || filter === 'kadaluarsa') {
-      whereClauses.push('tanggal_kadaluarsa < CURRENT_DATE');
+      whereClauses.push('expiry_date < CURRENT_DATE');
     }
 
     if (whereClauses.length > 0) {
       sql += ' WHERE ' + whereClauses.join(' AND ');
     }
 
-    sql += ' ORDER BY nama_obat ASC';
+    sql += ' ORDER BY name ASC';
 
     const result = await query(sql);
     return NextResponse.json({ medicines: result.rows, data: result.rows });
@@ -69,10 +69,10 @@ export async function POST(request) {
     const tipeVal = validTipe.includes(tipe) ? tipe : 'biasa';
 
     const result = await query(
-      `INSERT INTO obat (nama_obat, deskripsi, tipe, stok, tanggal_kadaluarsa)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [nama_obat, deskripsi || null, tipeVal, stok, tanggal_kadaluarsa || null]
+      `INSERT INTO medicines (name, description, type, unit, stock, expiry_date)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, name, name as nama_obat, description, description as deskripsi, type as tipe, unit, stock as stok, expiry_date as tanggal_kadaluarsa`,
+      [nama_obat, deskripsi || null, tipeVal, body.unit || 'tablet', stok, tanggal_kadaluarsa || null]
     );
 
     return NextResponse.json({ medicine: result.rows[0] }, { status: 201 });

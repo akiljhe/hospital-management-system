@@ -6,8 +6,8 @@ import { validateRequired, sanitize } from '@/lib/validation';
 export async function GET() {
   try {
     const result = await query(
-      `SELECT id, nama_poli, nama_poli as name, deskripsi, deskripsi as description, ikon, ikon as icon 
-       FROM poli ORDER BY nama_poli ASC`
+      `SELECT id, name, name as nama_poli, description, description as deskripsi, icon, icon as ikon 
+       FROM polyclinics ORDER BY name ASC`
     );
     return NextResponse.json({ polyclinics: result.rows, data: result.rows });
   } catch (error) {
@@ -34,10 +34,10 @@ export async function POST(request) {
     }
 
     const result = await query(
-      `INSERT INTO poli (nama_poli, deskripsi, ikon)
+      `INSERT INTO polyclinics (name, description, icon)
        VALUES ($1, $2, $3)
-       RETURNING id, nama_poli, nama_poli as name, deskripsi, deskripsi as description, ikon, ikon as icon`,
-      [nama_poli, deskripsi || null, ikon || 'poli']
+       RETURNING id, name, name as nama_poli, description, description as deskripsi, icon, icon as ikon`,
+      [nama_poli, deskripsi || null, ikon || 'stethoscope']
     );
 
     return NextResponse.json({ polyclinic: result.rows[0] }, { status: 201 });

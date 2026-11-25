@@ -21,10 +21,11 @@ export async function PUT(request, { params }) {
 
     // Ambil resep saat ini
     const currentResult = await query(
-      `SELECT r.*, rm.pasien_id, u_pat.nama_lengkap as patient_name
-       FROM resep r
-       JOIN rekam_medis rm ON r.rekam_medis_id = rm.id
-       JOIN users u_pat ON rm.pasien_id = u_pat.id
+      `SELECT r.*, pat.user_id as patient_user_id, u_pat.name as patient_name
+       FROM prescriptions r
+       JOIN medical_records rm ON r.medical_record_id = rm.id
+       JOIN patients pat ON rm.patient_id = pat.id
+       JOIN users u_pat ON pat.user_id = u_pat.id
        WHERE r.id = $1`,
       [id]
     );
@@ -35,10 +36,10 @@ export async function PUT(request, { params }) {
 
     const prescription = currentResult.rows[0];
 
-    // Jalankan UPDATE. Trigger `trg_resep_status` di postgres akan memvalidasi transisi dan mengupdate stok obat
+    // Jalankan UPDATE. Trigger `trg_prescription_status_rules` di postgres akan memvalidasi transisi dan memotong stok
     try {
       const updateResult = await query(
-        `UPDATE resep
+        `UPDATE prescriptions
          SET status = $1
          WHERE id = $2
          RETURNING *`,
@@ -50,10 +51,10 @@ export async function PUT(request, { params }) {
       // Kirim notifikasi ke pasien jika Siap Diambil
       if (status === 'Siap Diambil') {
         await query(
-          `INSERT INTO notifikasi (user_id, judul, pesan, link)
+          `INSERT INTO notifications (user_id, title, message, link)
            VALUES ($1, $2, $3, $4)`,
           [
-            prescription.pasien_id,
+            prescription.patient_user_id,
             'Resep Obat Siap Diambil',
             'Resep obat Anda telah disiapkan oleh bagian farmasi dan sekarang siap untuk diambil di loket obat.',
             '/pharmacy',

@@ -14,19 +14,22 @@ export async function GET(request, { params }) {
     const { id } = await params;
 
     const result = await query(
-      `SELECT jt.*, jt.tanggal_booking as appointment_date, jt.keluhan_singkat as keluhan, jt.keluhan_singkat as notes,
-              jt.alasan_penolakan as rejection_reason,
-              u_pat.nama_lengkap as patient_name, u_pat.telepon as patient_phone, u_pat.email as patient_email,
-              u_doc.nama_lengkap as doctor_name, u_doc.email as doctor_email,
-              p.nama_poli as polyclinic_name,
-              jd.hari, jd.jam_mulai, jd.jam_selesai
-       FROM janji_temu jt
-       JOIN users u_pat ON jt.pasien_id = u_pat.id
-       JOIN users u_doc ON jt.dokter_id = u_doc.id
-       JOIN dokter d ON jt.dokter_id = d.user_id
-       LEFT JOIN poli p ON d.poli_id = p.id
-       JOIN jadwal_dokter jd ON jt.jadwal_id = jd.id
-       WHERE jt.id = $1`,
+      `SELECT a.*, a.appointment_date as tanggal_booking, a.complaint as keluhan, a.complaint as notes,
+              a.rejection_reason as alasan_penolakan,
+              u_pat.name as patient_name, u_pat.name as nama_pasien, u_pat.phone as patient_phone, u_pat.email as patient_email,
+              u_doc.name as doctor_name, u_doc.name as nama_dokter, u_doc.email as doctor_email,
+              p.name as polyclinic_name, p.name as nama_poli,
+              ds.day as hari, ds.start_time as jam_mulai, ds.end_time as jam_selesai,
+              pat.user_id as patient_user_id,
+              d.user_id as doctor_user_id
+       FROM appointments a
+       JOIN patients pat ON a.patient_id = pat.id
+       JOIN users u_pat ON pat.user_id = u_pat.id
+       JOIN doctors d ON a.doctor_id = d.id
+       JOIN users u_doc ON d.user_id = u_doc.id
+       LEFT JOIN polyclinics p ON d.polyclinic_id = p.id
+       JOIN doctor_schedules ds ON a.schedule_id = ds.id
+       WHERE a.id = $1`,
       [id]
     );
 
@@ -37,10 +40,10 @@ export async function GET(request, { params }) {
     const appointment = result.rows[0];
 
     // Check authorization
-    if (auth.user.role === 'pasien' && appointment.pasien_id !== auth.user.id) {
+    if (auth.user.role === 'pasien' && appointment.patient_user_id !== auth.user.id) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
-    if (auth.user.role === 'dokter' && appointment.dokter_id !== auth.user.id) {
+    if (auth.user.role === 'dokter' && appointment.doctor_user_id !== auth.user.id) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 
@@ -70,11 +73,15 @@ export async function PUT(request, { params }) {
 
     // Ambil janji temu saat ini
     const currentResult = await query(
-      `SELECT jt.*, TO_CHAR(jt.tanggal_booking, 'YYYY-MM-DD') as tanggal_booking_str,
-              u_doc.nama_lengkap as doctor_name
-       FROM janji_temu jt
-       JOIN users u_doc ON jt.dokter_id = u_doc.id
-       WHERE jt.id = $1`,
+      `SELECT a.*, TO_CHAR(a.appointment_date, 'YYYY-MM-DD') as tanggal_booking_str,
+              u_doc.name as doctor_name,
+              pat.user_id as patient_user_id,
+              d.user_id as doctor_user_id
+       FROM appointments a
+       JOIN patients pat ON a.patient_id = pat.id
+       JOIN doctors d ON a.doctor_id = d.id
+       JOIN users u_doc ON d.user_id = u_doc.id
+       WHERE a.id = $1`,
       [id]
     );
 
@@ -86,7 +93,7 @@ export async function PUT(request, { params }) {
 
     // Otorisasi dan validasi transisi status
     if (auth.user.role === 'pasien') {
-      if (appointment.pasien_id !== auth.user.id) {
+      if (appointment.patient_user_id !== auth.user.id) {
         return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
       }
       if (status !== 'Dibatalkan') {
@@ -96,7 +103,7 @@ export async function PUT(request, { params }) {
         return NextResponse.json({ error: 'Janji temu hanya dapat dibatalkan jika statusnya masih Pending' }, { status: 400 });
       }
     } else if (auth.user.role === 'dokter') {
-      if (appointment.dokter_id !== auth.user.id) {
+      if (appointment.doctor_user_id !== auth.user.id) {
         return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
       }
       if (!['Approved', 'Rejected'].includes(status)) {
@@ -118,8 +125,8 @@ export async function PUT(request, { params }) {
     }
 
     const updateResult = await query(
-      `UPDATE janji_temu
-       SET status = $1, alasan_penolakan = $2, updated_at = NOW()
+      `UPDATE appointments
+       SET status = $1, rejection_reason = $2, updated_at = NOW()
        WHERE id = $3
        RETURNING *`,
       [status, status === 'Rejected' ? alasan_penolakan : null, id]
@@ -127,17 +134,17 @@ export async function PUT(request, { params }) {
 
     const updated = updateResult.rows[0];
 
-    // Kirim notifikasi ke pasien jika Approved atau Rejected
+    // Kirim notifikasi ke pasien jika Approved atau Rejected (jika belum otomatis dikirim oleh trigger)
     const doctorName = appointment.doctor_name || '';
     const doctorDisplayName = /^dr\.?/i.test(doctorName) ? doctorName : `Dr. ${doctorName}`;
-    const bookingDateLabel = formatDate(appointment.tanggal_booking_str || appointment.tanggal_booking);
+    const bookingDateLabel = formatDate(appointment.tanggal_booking_str || appointment.appointment_date);
 
     if (status === 'Approved') {
       await query(
-        `INSERT INTO notifikasi (user_id, judul, pesan, link)
+        `INSERT INTO notifications (user_id, title, message, link)
          VALUES ($1, $2, $3, $4)`,
         [
-          appointment.pasien_id,
+          appointment.patient_user_id,
           'Janji Temu Disetujui',
           `Janji temu Anda dengan ${doctorDisplayName} pada tanggal ${bookingDateLabel} telah disetujui.`,
           '/appointments',
@@ -145,10 +152,10 @@ export async function PUT(request, { params }) {
       );
     } else if (status === 'Rejected') {
       await query(
-        `INSERT INTO notifikasi (user_id, judul, pesan, link)
+        `INSERT INTO notifications (user_id, title, message, link)
          VALUES ($1, $2, $3, $4)`,
         [
-          appointment.pasien_id,
+          appointment.patient_user_id,
           'Janji Temu Ditolak',
           `Janji temu Anda dengan ${doctorDisplayName} pada tanggal ${bookingDateLabel} ditolak. Alasan: ${alasan_penolakan}`,
           '/appointments',

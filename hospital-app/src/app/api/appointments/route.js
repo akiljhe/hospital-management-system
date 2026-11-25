@@ -17,46 +17,47 @@ export async function GET(request) {
     const status = searchParams.get('status');
 
     let sql = `
-      SELECT jt.id, jt.pasien_id, jt.dokter_id, jt.jadwal_id,
-             jt.tanggal_booking, jt.tanggal_booking as appointment_date,
-             jt.keluhan_singkat, jt.keluhan_singkat as keluhan, jt.keluhan_singkat as notes,
-             jt.status,
-             jt.alasan_penolakan, jt.alasan_penolakan as rejection_reason,
-             jt.created_at, jt.updated_at,
-             u_pat.nama_lengkap as patient_name, u_pat.telepon as patient_phone, u_pat.email as patient_email,
-             u_doc.nama_lengkap as doctor_name, u_doc.email as doctor_email,
-             p.nama_poli as polyclinic_name, p.nama_poli,
-             jd.hari, jd.hari as day,
-             jd.jam_mulai, jd.jam_mulai as start_time,
-             jd.jam_selesai, jd.jam_selesai as end_time
-      FROM janji_temu jt
-      JOIN users u_pat ON jt.pasien_id = u_pat.id
-      JOIN users u_doc ON jt.dokter_id = u_doc.id
-      JOIN dokter d ON jt.dokter_id = d.user_id
-      LEFT JOIN poli p ON d.poli_id = p.id
-      JOIN jadwal_dokter jd ON jt.jadwal_id = jd.id
+      SELECT a.id, a.patient_id as pasien_id, a.doctor_id as dokter_id, a.schedule_id as jadwal_id,
+             a.appointment_date as tanggal_booking, a.appointment_date,
+             a.complaint as keluhan_singkat, a.complaint as keluhan, a.complaint as notes,
+             a.status,
+             a.rejection_reason as alasan_penolakan, a.rejection_reason,
+             a.created_at, a.updated_at,
+             u_pat.name as patient_name, u_pat.name as nama_pasien, u_pat.phone as patient_phone, u_pat.email as patient_email,
+             u_doc.name as doctor_name, u_doc.name as nama_dokter, u_doc.email as doctor_email,
+             p.name as polyclinic_name, p.name as nama_poli,
+             ds.day as hari, ds.day,
+             ds.start_time as jam_mulai, ds.start_time,
+             ds.end_time as jam_selesai, ds.end_time
+      FROM appointments a
+      JOIN patients pat ON a.patient_id = pat.id
+      JOIN users u_pat ON pat.user_id = u_pat.id
+      JOIN doctors d ON a.doctor_id = d.id
+      JOIN users u_doc ON d.user_id = u_doc.id
+      LEFT JOIN polyclinics p ON d.polyclinic_id = p.id
+      JOIN doctor_schedules ds ON a.schedule_id = ds.id
     `;
     const params = [];
     const whereClauses = [];
 
     if (auth.user.role === 'pasien') {
       params.push(auth.user.id);
-      whereClauses.push(`jt.pasien_id = $${params.length}`);
+      whereClauses.push(`pat.user_id = $${params.length}`);
     } else if (auth.user.role === 'dokter') {
       params.push(auth.user.id);
-      whereClauses.push(`jt.dokter_id = $${params.length}`);
+      whereClauses.push(`d.user_id = $${params.length}`);
     }
 
     if (status) {
       params.push(status);
-      whereClauses.push(`jt.status = $${params.length}`);
+      whereClauses.push(`a.status = $${params.length}`);
     }
 
     if (whereClauses.length > 0) {
       sql += ' WHERE ' + whereClauses.join(' AND ');
     }
 
-    sql += ' ORDER BY jt.tanggal_booking DESC, jd.jam_mulai DESC, jt.created_at DESC';
+    sql += ' ORDER BY a.appointment_date DESC, ds.start_time DESC, a.created_at DESC';
 
     const result = await query(sql, params);
     return NextResponse.json({ appointments: result.rows, data: result.rows });
@@ -89,12 +90,23 @@ export async function POST(request) {
       return NextResponse.json({ error: errors.join(', ') }, { status: 400 });
     }
 
+    // Ambil info patient_id dari user login
+    const patRes = await query('SELECT id FROM patients WHERE user_id = $1', [auth.user.id]);
+    let patient_id;
+    if (patRes.rows.length === 0) {
+      const newPat = await query('INSERT INTO patients (user_id) VALUES ($1) RETURNING id', [auth.user.id]);
+      patient_id = newPat.rows[0].id;
+    } else {
+      patient_id = patRes.rows[0].id;
+    }
+
     // Ambil info jadwal
     const scheduleResult = await query(
-      `SELECT jd.*, u.nama_lengkap as doctor_name
-       FROM jadwal_dokter jd
-       JOIN users u ON jd.dokter_id = u.id
-       WHERE jd.id = $1`,
+      `SELECT ds.*, u.id as doctor_user_id, u.name as doctor_name
+       FROM doctor_schedules ds
+       JOIN doctors d ON ds.doctor_id = d.id
+       JOIN users u ON d.user_id = u.id
+       WHERE ds.id = $1`,
       [jadwal_id]
     );
 
@@ -109,9 +121,9 @@ export async function POST(request) {
     const bookingDate = new Date(year, month - 1, day);
     const dayOfWeek = DAY_MAP[bookingDate.getDay()];
 
-    if (dayOfWeek !== schedule.hari) {
+    if (dayOfWeek !== schedule.day) {
       return NextResponse.json(
-        { error: `Tanggal ${tanggal_booking} adalah hari ${dayOfWeek}, sedangkan jadwal dokter adalah hari ${schedule.hari}` },
+        { error: `Tanggal ${tanggal_booking} adalah hari ${dayOfWeek}, sedangkan jadwal dokter adalah hari ${schedule.day}` },
         { status: 400 }
       );
     }
@@ -125,8 +137,8 @@ export async function POST(request) {
 
     // Cek apakah slot sudah dibooking pada tanggal tersebut
     const existing = await query(
-      `SELECT id FROM janji_temu
-       WHERE jadwal_id = $1 AND tanggal_booking = $2 AND status IN ('Pending', 'Approved', 'Selesai')`,
+      `SELECT id FROM appointments
+       WHERE schedule_id = $1 AND appointment_date = $2 AND status IN ('Pending', 'Approved', 'Selesai')`,
       [jadwal_id, tanggal_booking]
     );
 
@@ -134,24 +146,24 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Slot jadwal sudah dipesan untuk tanggal ini. Silakan pilih slot lain.' }, { status: 409 });
     }
 
-    // Insert janji temu dengan auto-increment id tanpa mengubah skema tabel
+    // Insert appointments
     const insertResult = await query(
-      `INSERT INTO janji_temu (id, pasien_id, dokter_id, jadwal_id, tanggal_booking, keluhan_singkat, status)
-       VALUES (COALESCE((SELECT MAX(id) FROM janji_temu), 0) + 1, $1, $2, $3, $4, $5, 'Pending')
+      `INSERT INTO appointments (patient_id, doctor_id, schedule_id, appointment_date, complaint, status)
+       VALUES ($1, $2, $3, $4, $5, 'Pending')
        RETURNING *`,
-      [auth.user.id, schedule.dokter_id, jadwal_id, tanggal_booking, keluhan_singkat]
+      [patient_id, schedule.doctor_id, jadwal_id, tanggal_booking, keluhan_singkat]
     );
 
     const appointment = insertResult.rows[0];
 
     // Notifikasi in-app untuk dokter: ada janji temu baru
     await query(
-      `INSERT INTO notifikasi (user_id, judul, pesan, link)
+      `INSERT INTO notifications (user_id, title, message, link)
        VALUES ($1, $2, $3, $4)`,
       [
-        schedule.dokter_id,
+        schedule.doctor_user_id,
         'Janji Temu Baru',
-        `Pasien ${auth.user.name || auth.user.nama_lengkap} membuat janji temu baru untuk tanggal ${formatDate(tanggal_booking)} (${schedule.jam_mulai.substring(0, 5)} - ${schedule.jam_selesai.substring(0, 5)}).`,
+        `Pasien ${auth.user.name || auth.user.nama_lengkap} membuat janji temu baru untuk tanggal ${formatDate(tanggal_booking)} (${schedule.start_time.substring(0, 5)} - ${schedule.end_time.substring(0, 5)}).`,
         '/appointments',
       ]
     );

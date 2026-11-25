@@ -12,35 +12,41 @@ export async function GET(request, { params }) {
     const { id } = await params;
 
     const result = await query(
-      `SELECT rm.id, rm.janji_temu_id, rm.pasien_id, rm.dokter_id,
-              rm.diagnosis, rm.tindakan_medis, rm.tindakan_medis as tindakan, rm.catatan, rm.created_at,
-              u_pat.nama_lengkap as patient_name, u_pat.telepon as patient_phone, u_pat.alamat as patient_address,
-              u_doc.nama_lengkap as doctor_name,
-              p.nama_poli as polyclinic_name,
-              jt.tanggal_booking as appointment_date,
-              r.id as prescription_id, r.status as prescription_status, r.tanggal_siap, r.tanggal_diambil,
+      `SELECT mr.id, mr.appointment_id as janji_temu_id, mr.patient_id as pasien_id, mr.doctor_id as dokter_id,
+              mr.diagnosis, mr.treatment as tindakan_medis, mr.treatment as tindakan, mr.notes as catatan, mr.created_at,
+              u_pat.name as patient_name, u_pat.name as nama_lengkap, u_pat.phone as patient_phone, u_pat.phone as telepon, u_pat.address as patient_address, u_pat.address as alamat,
+              u_doc.name as doctor_name,
+              p.name as polyclinic_name, p.name as nama_poli,
+              a.appointment_date as appointment_date, a.appointment_date as tanggal_booking,
+              pr.id as prescription_id, pr.status as prescription_status, pr.ready_at as tanggal_siap, pr.collected_at as tanggal_diambil,
               COALESCE(
                 json_agg(
                   json_build_object(
-                    'id', ri.id,
-                    'obat_id', ri.obat_id,
-                    'nama_obat', o.nama_obat,
-                    'jumlah', ri.jumlah,
-                    'tipe', o.tipe
+                    'id', pri.id,
+                    'obat_id', pri.medicine_id,
+                    'medicine_id', pri.medicine_id,
+                    'nama_obat', m.name,
+                    'medicine_name', m.name,
+                    'jumlah', pri.quantity,
+                    'quantity', pri.quantity,
+                    'tipe', m.type,
+                    'dosage', pri.dosage
                   )
-                ) FILTER (WHERE ri.id IS NOT NULL), '[]'
+                ) FILTER (WHERE pri.id IS NOT NULL), '[]'
               ) as prescription_items
-       FROM rekam_medis rm
-       JOIN users u_pat ON rm.pasien_id = u_pat.id
-       JOIN users u_doc ON rm.dokter_id = u_doc.id
-       JOIN dokter d ON rm.dokter_id = d.user_id
-       LEFT JOIN poli p ON d.poli_id = p.id
-       JOIN janji_temu jt ON rm.janji_temu_id = jt.id
-       LEFT JOIN resep r ON r.rekam_medis_id = rm.id
-       LEFT JOIN resep_item ri ON ri.resep_id = r.id
-       LEFT JOIN obat o ON ri.obat_id = o.id
-       WHERE rm.id = $1
-       GROUP BY rm.id, u_pat.nama_lengkap, u_pat.telepon, u_pat.alamat, u_doc.nama_lengkap, p.nama_poli, jt.tanggal_booking, r.id, r.status, r.tanggal_siap, r.tanggal_diambil`,
+       FROM medical_records mr
+       JOIN patients pat ON mr.patient_id = pat.id
+       JOIN users u_pat ON pat.user_id = u_pat.id
+       JOIN doctors d ON mr.doctor_id = d.id
+       JOIN users u_doc ON d.user_id = u_doc.id
+       LEFT JOIN polyclinics p ON d.polyclinic_id = p.id
+       JOIN appointments a ON mr.appointment_id = a.id
+       LEFT JOIN prescriptions pr ON pr.medical_record_id = mr.id
+       LEFT JOIN prescription_items pri ON pri.prescription_id = pr.id
+       LEFT JOIN medicines m ON pri.medicine_id = m.id
+       WHERE mr.id = $1
+       GROUP BY mr.id, mr.appointment_id, mr.patient_id, mr.doctor_id, mr.diagnosis, mr.treatment, mr.notes, mr.created_at,
+                u_pat.name, u_pat.phone, u_pat.address, u_doc.name, p.name, a.appointment_date, pr.id, pr.status, pr.ready_at, pr.collected_at`,
       [id]
     );
 
@@ -51,10 +57,10 @@ export async function GET(request, { params }) {
     const record = result.rows[0];
 
     // Otorisasi
-    if (auth.user.role === 'pasien' && record.pasien_id !== auth.user.id) {
+    if (auth.user.role === 'pasien' && record.pasien_id !== auth.user.patient_id) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
-    if (auth.user.role === 'dokter' && record.dokter_id !== auth.user.id) {
+    if (auth.user.role === 'dokter' && record.dokter_id !== auth.user.doctor_id) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 

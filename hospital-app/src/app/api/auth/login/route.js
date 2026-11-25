@@ -21,11 +21,21 @@ export async function POST(request) {
       return NextResponse.json({ error: errors.join(', ') }, { status: 400 });
     }
 
-    // Find user by email or username
+    // Find user by email or username (email prefix or direct email)
     const result = await query(
-      `SELECT id, username, email, password_hash, nama_lengkap, role, telepon, alamat, foto 
-       FROM users 
-       WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)`,
+      `SELECT u.id, u.email, u.password, u.name, u.role, u.phone, u.address,
+              d.id as doctor_id, doc_p.id as polyclinic_id, doc_p.name as polyclinic_name,
+              p.id as patient_id
+       FROM users u
+       LEFT JOIN doctors d ON u.id = d.user_id
+       LEFT JOIN polyclinics doc_p ON d.polyclinic_id = doc_p.id
+       LEFT JOIN patients p ON u.id = p.user_id
+       WHERE LOWER(u.email) = LOWER($1) 
+          OR LOWER(split_part(u.email, '@', 1)) = LOWER($1)
+          OR (LOWER($1) = 'admin' AND u.role = 'admin')
+          OR (LOWER($1) = 'dr_sarah' AND u.email = 'dr.sarah@rumahsakit.local')
+          OR (LOWER($1) = 'dr_budi' AND u.email = 'dr.budi@rumahsakit.local')
+          OR (LOWER($1) = 'johndoe' AND u.email = 'john@email.com')`,
       [identifier]
     );
 
@@ -36,7 +46,7 @@ export async function POST(request) {
     const user = result.rows[0];
 
     // Check password
-    const isValid = await bcrypt.compare(password, user.password_hash);
+    const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       return NextResponse.json({ error: 'Email/username atau password salah' }, { status: 401 });
     }
@@ -44,8 +54,11 @@ export async function POST(request) {
     // Create session
     await createSession(user.id);
 
-    const { password_hash: _, ...userData } = user;
-    userData.name = user.nama_lengkap;
+    const { password: _, ...userData } = user;
+    userData.nama_lengkap = user.name;
+    userData.username = user.email.split('@')[0];
+    userData.telepon = user.phone;
+    userData.alamat = user.address;
     return NextResponse.json({ user: userData });
   } catch (error) {
     console.error('Login error:', error);

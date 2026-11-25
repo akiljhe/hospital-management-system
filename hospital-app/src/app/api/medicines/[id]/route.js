@@ -7,9 +7,9 @@ export async function GET(request, { params }) {
   try {
     const { id } = await params;
     const result = await query(
-      `SELECT id, nama_obat, nama_obat as name, deskripsi, deskripsi as description, 
-              tipe, tipe as unit, stok, stok as stock, tanggal_kadaluarsa, tanggal_kadaluarsa as expiry_date
-       FROM obat WHERE id = $1`,
+      `SELECT id, name, name as nama_obat, description, description as deskripsi, 
+              type as tipe, unit, stock as stok, stock, expiry_date as tanggal_kadaluarsa, expiry_date
+       FROM medicines WHERE id = $1`,
       [id]
     );
 
@@ -52,10 +52,10 @@ export async function PUT(request, { params }) {
     const tipeVal = validTipe.includes(tipe) ? tipe : 'biasa';
 
     const result = await query(
-      `UPDATE obat
-       SET nama_obat = $1, deskripsi = $2, tipe = $3, stok = $4, tanggal_kadaluarsa = $5
+      `UPDATE medicines
+       SET name = $1, description = $2, type = $3, stock = $4, expiry_date = $5
        WHERE id = $6
-       RETURNING *`,
+       RETURNING id, name, name as nama_obat, description, description as deskripsi, type as tipe, unit, stock as stok, expiry_date as tanggal_kadaluarsa`,
       [nama_obat, deskripsi, tipeVal, stok, tanggal_kadaluarsa, id]
     );
 
@@ -79,8 +79,8 @@ export async function DELETE(request, { params }) {
 
     const { id } = await params;
 
-    // Cek apakah obat sudah ada di resep_item
-    const checkItem = await query('SELECT id FROM resep_item WHERE obat_id = $1 LIMIT 1', [id]);
+    // Cek apakah obat sudah ada di prescription_items
+    const checkItem = await query('SELECT id FROM prescription_items WHERE medicine_id = $1 LIMIT 1', [id]);
     if (checkItem.rows.length > 0) {
       return NextResponse.json(
         { error: 'Obat tidak dapat dihapus karena sudah tercatat dalam riwayat resep obat pasien' },
@@ -88,7 +88,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const result = await query('DELETE FROM obat WHERE id = $1 RETURNING id', [id]);
+    const result = await query('DELETE FROM medicines WHERE id = $1 RETURNING id', [id]);
 
     if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Obat tidak ditemukan' }, { status: 404 });

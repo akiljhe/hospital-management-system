@@ -41,18 +41,13 @@ export async function POST(request) {
       if (!username) username = 'pasien_' + Math.floor(Math.random() * 10000);
     }
 
-    // Check existing email or username
+    // Check existing email
     const existing = await query(
-      'SELECT id, email, username FROM users WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($2)',
-      [email, username]
+      'SELECT id, email FROM users WHERE LOWER(email) = LOWER($1)',
+      [email]
     );
     if (existing.rows.length > 0) {
-      const match = existing.rows[0];
-      if (match.email.toLowerCase() === email.toLowerCase()) {
-        return NextResponse.json({ error: 'Email sudah terdaftar' }, { status: 409 });
-      } else {
-        username = `${username}_${Math.floor(Math.random() * 1000)}`;
-      }
+      return NextResponse.json({ error: 'Email sudah terdaftar' }, { status: 409 });
     }
 
     // Hash password
@@ -60,14 +55,24 @@ export async function POST(request) {
 
     // Insert user with role 'pasien'
     const userResult = await query(
-      `INSERT INTO users (username, email, password_hash, nama_lengkap, role, telepon, alamat)
-       VALUES ($1, $2, $3, $4, 'pasien', $5, $6)
-       RETURNING id, username, email, nama_lengkap, role, telepon, alamat`,
-      [username, email.toLowerCase(), hashedPassword, name, phone || null, address || null]
+      `INSERT INTO users (name, email, password, role, phone, address)
+       VALUES ($1, $2, $3, 'pasien', $4, $5)
+       RETURNING id, name, email, role, phone, address`,
+      [name, email.toLowerCase(), hashedPassword, phone || null, address || null]
     );
 
     const user = userResult.rows[0];
-    user.name = user.nama_lengkap;
+    user.nama_lengkap = user.name;
+    user.username = username;
+    user.telepon = user.phone;
+    user.alamat = user.address;
+
+    // Create entry in patients table
+    const patResult = await query(
+      `INSERT INTO patients (user_id) VALUES ($1) RETURNING id`,
+      [user.id]
+    );
+    user.patient_id = patResult.rows[0].id;
 
     // Create session
     await createSession(user.id);

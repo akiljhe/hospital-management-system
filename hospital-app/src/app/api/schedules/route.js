@@ -11,21 +11,23 @@ export async function GET(request) {
     const doctor_id = searchParams.get('doctor_id');
 
     let sql = `
-      SELECT jd.id, jd.dokter_id, jd.hari, jd.hari as day, 
-             jd.jam_mulai, jd.jam_mulai as start_time, 
-             jd.jam_selesai, jd.jam_selesai as end_time,
-             u.nama_lengkap as doctor_name
-      FROM jadwal_dokter jd
-      JOIN users u ON jd.dokter_id = u.id
+      SELECT ds.id, ds.doctor_id, ds.doctor_id as dokter_id, ds.day, ds.day as hari, 
+             ds.start_time, ds.start_time as jam_mulai, 
+             ds.end_time, ds.end_time as jam_selesai,
+             u.name as doctor_name
+      FROM doctor_schedules ds
+      JOIN doctors d ON ds.doctor_id = d.id
+      JOIN users u ON d.user_id = u.id
+      WHERE ds.is_active = TRUE
     `;
     const params = [];
 
     if (doctor_id) {
       params.push(doctor_id);
-      sql += ` WHERE jd.dokter_id = $${params.length}`;
+      sql += ` AND (ds.doctor_id = $${params.length} OR d.user_id = $${params.length})`;
     }
 
-    sql += ` ORDER BY CASE jd.hari
+    sql += ` ORDER BY CASE ds.day
       WHEN 'Senin' THEN 1
       WHEN 'Selasa' THEN 2
       WHEN 'Rabu' THEN 3
@@ -33,7 +35,7 @@ export async function GET(request) {
       WHEN 'Jumat' THEN 5
       WHEN 'Sabtu' THEN 6
       WHEN 'Minggu' THEN 7
-    END, jd.jam_mulai ASC`;
+    END, ds.start_time ASC`;
 
     const result = await query(sql, params);
     return NextResponse.json({ schedules: result.rows, data: result.rows });
@@ -55,17 +57,23 @@ export async function POST(request) {
     let jam_mulai = sanitize(body.jam_mulai || body.start_time);
     let jam_selesai = sanitize(body.jam_selesai || body.end_time);
     
-    // Dokter id: jika dokter, paksakan id dokter sendiri
-    let dokter_id = auth.user.id;
-    if (auth.user.role === 'admin' && (body.dokter_id || body.doctor_id)) {
-      dokter_id = body.dokter_id || body.doctor_id;
+    // Resolve doctor_id in doctors table
+    let doctorRow;
+    if (auth.user.role === 'dokter') {
+      const docRes = await query('SELECT id FROM doctors WHERE user_id = $1', [auth.user.id]);
+      if (docRes.rows.length === 0) {
+        return NextResponse.json({ error: 'Pengguna ini belum terdaftar di tabel doctors' }, { status: 400 });
+      }
+      doctorRow = docRes.rows[0];
+    } else if (auth.user.role === 'admin') {
+      const docIdInput = body.doctor_id || body.dokter_id;
+      const docRes = await query('SELECT id FROM doctors WHERE id = $1 OR user_id = $1', [docIdInput]);
+      if (docRes.rows.length === 0) {
+        return NextResponse.json({ error: 'Dokter tidak ditemukan' }, { status: 400 });
+      }
+      doctorRow = docRes.rows[0];
     }
-
-    // Pastikan user ini terdaftar di tabel dokter
-    const checkDoc = await query('SELECT user_id FROM dokter WHERE user_id = $1', [dokter_id]);
-    if (checkDoc.rows.length === 0) {
-      return NextResponse.json({ error: 'Pengguna ini belum terdaftar di tabel dokter' }, { status: 400 });
-    }
+    const real_doctor_id = doctorRow.id;
 
     // Validate hari
     if (!hari || !VALID_DAYS.includes(hari)) {
@@ -99,8 +107,8 @@ export async function POST(request) {
 
     // Cek apakah slot sudah ada
     const existing = await query(
-      `SELECT id FROM jadwal_dokter WHERE dokter_id = $1 AND hari = $2 AND jam_mulai = $3`,
-      [dokter_id, hari, formattedStart]
+      `SELECT id FROM doctor_schedules WHERE doctor_id = $1 AND day = $2 AND start_time = $3`,
+      [real_doctor_id, hari, formattedStart]
     );
 
     if (existing.rows.length > 0) {
@@ -108,10 +116,10 @@ export async function POST(request) {
     }
 
     const insertResult = await query(
-      `INSERT INTO jadwal_dokter (dokter_id, hari, jam_mulai, jam_selesai)
+      `INSERT INTO doctor_schedules (doctor_id, day, start_time, end_time)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, dokter_id, hari, jam_mulai, jam_selesai`,
-      [dokter_id, hari, formattedStart, formattedEnd]
+       RETURNING id, doctor_id, day, day as hari, start_time, start_time as jam_mulai, end_time, end_time as jam_selesai`,
+      [real_doctor_id, hari, formattedStart, formattedEnd]
     );
 
     return NextResponse.json({ schedule: insertResult.rows[0] }, { status: 201 });

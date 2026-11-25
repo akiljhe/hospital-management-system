@@ -55,12 +55,22 @@ export async function getSession() {
 
   try {
     const result = await query(
-      `SELECT id, username, email, nama_lengkap, nama_lengkap as name, role, telepon, telepon as phone, alamat, alamat as address, foto 
-       FROM users WHERE id = $1`,
+      `SELECT u.id, u.email, u.name, u.name as nama_lengkap, u.role, u.phone as telepon, u.phone, u.address as alamat, u.address,
+              d.id as doctor_id, doc_p.id as polyclinic_id, doc_p.name as polyclinic_name,
+              p.id as patient_id
+       FROM users u
+       LEFT JOIN doctors d ON u.id = d.user_id
+       LEFT JOIN polyclinics doc_p ON d.polyclinic_id = doc_p.id
+       LEFT JOIN patients p ON u.id = p.user_id
+       WHERE u.id = $1`,
       [payload.userId]
     );
     if (result.rows.length === 0) return null;
-    return result.rows[0];
+    const row = result.rows[0];
+    return {
+      ...row,
+      username: row.email.split('@')[0], // fallback username from email
+    };
   } catch (err) {
     console.error('getSession error:', err);
     return null;

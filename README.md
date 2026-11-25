@@ -61,7 +61,7 @@ Aplikasi web modern berbasis **Next.js (App Router)** dengan **PostgreSQL (raw S
 ## 🗄️ Database & Trigger
 
 - Menggunakan PostgreSQL dengan query SQL mentah (**Raw SQL**) melalui library `pg` (tanpa ORM seperti Prisma/Sequelize).
-- File skema database tersimpan di luar folder `/app`: `hospital.sql`.
+- File skema database tersimpan di root folder: `rumah_sakit.sql`.
 - Menggunakan trigger otomatis:
   1. `fn_arsip_permanen`: Melindungi tabel `rekam_medis` dan `resep_item` dari aksi `UPDATE` dan `DELETE`.
   2. `fn_rekam_medis_baru`: Memvalidasi bahwa janji temu berstatus `Approved` sebelum rekam medis dibuat.
@@ -109,10 +109,10 @@ DATABASE_URL="postgresql://postgres:password@localhost:5432/rumah_sakit"
 SESSION_SECRET="hospital-secret-key-2026-very-secure-and-long"
 \`\`\`
 
-### 4. Import Database `hospital.sql`
-Jalankan file `hospital.sql` (berada di luar folder `/app`) ke PostgreSQL:
+### 4. Import Database `rumah_sakit.sql`
+Jalankan file `rumah_sakit.sql` ke PostgreSQL:
 \`\`\`bash
-psql -U postgres -d rumah_sakit -f "../hospital.sql"
+psql -U postgres -d rumah_sakit -f "rumah_sakit.sql"
 \`\`\`
 
 ### 5. Jalankan Server Development

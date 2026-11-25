@@ -59,26 +59,38 @@ export default function HomePage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white py-16 sm:py-24 border-b border-indigo-950/60">
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-[#0a0f2e] to-[#051329] text-white py-16 sm:py-24 border-b border-indigo-950/60">
         {/* Top Border Glow Lightbeam */}
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_rgba(34,211,238,0.7)]" />
 
         {/* Ambient Vibrant Glow Orbs */}
-        <div className="absolute top-0 right-1/4 -translate-y-1/3 w-[550px] h-[550px] bg-indigo-500/25 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 left-10 translate-y-1/3 w-[500px] h-[500px] bg-teal-500/20 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute top-1/2 right-10 -translate-y-1/2 w-80 h-80 bg-cyan-400/15 rounded-full blur-[80px] pointer-events-none" />
+        <div className="absolute top-0 right-1/4 -translate-y-1/3 w-[600px] h-[600px] bg-indigo-600/30 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 left-10 translate-y-1/3 w-[550px] h-[550px] bg-teal-500/25 rounded-full blur-[110px] pointer-events-none" />
+        <div className="absolute top-1/2 right-10 -translate-y-1/2 w-96 h-96 bg-cyan-400/20 rounded-full blur-[90px] pointer-events-none" />
 
         {/* Medical Technology Grid Pattern Overlay */}
         <div 
-          className="absolute inset-0 opacity-[0.16] pointer-events-none mix-blend-screen"
+          className="absolute inset-0 opacity-[0.22] pointer-events-none mix-blend-screen"
           style={{
-            backgroundImage: `radial-gradient(circle at center, rgba(56, 189, 248, 0.6) 1.5px, transparent 1.5px), linear-gradient(to right, rgba(99, 102, 241, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.15) 1px, transparent 1px)`,
-            backgroundSize: `32px 32px, 32px 32px, 32px 32px`
+            backgroundImage: `radial-gradient(circle at center, rgba(56, 189, 248, 0.7) 1.5px, transparent 1.5px), linear-gradient(to right, rgba(99, 102, 241, 0.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.22) 1px, transparent 1px)`,
+            backgroundSize: `36px 36px, 36px 36px, 36px 36px`
           }}
         />
 
+        {/* Decorative Floating Medical Cross Watermarks */}
+        <div className="absolute left-8 top-12 w-28 h-28 opacity-[0.06] pointer-events-none text-cyan-300">
+          <svg viewBox="0 0 100 100" fill="currentColor">
+            <path d="M38 10 H62 V38 H90 V62 H62 V90 H38 V62 H10 V38 H38 Z" />
+          </svg>
+        </div>
+        <div className="absolute right-1/3 bottom-8 w-44 h-44 opacity-[0.05] pointer-events-none text-indigo-300">
+          <svg viewBox="0 0 100 100" fill="currentColor">
+            <path d="M38 10 H62 V38 H90 V62 H62 V90 H38 V62 H10 V38 H38 Z" />
+          </svg>
+        </div>
+
         {/* Futuristic Concentric Radial Rings (Medical Radar / Scan Graphic) */}
-        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] opacity-[0.07] pointer-events-none">
+        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] opacity-[0.14] pointer-events-none">
           <svg className="w-full h-full text-indigo-300" viewBox="0 0 600 600" fill="none">
             <circle cx="300" cy="300" r="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="6 6" />
             <circle cx="300" cy="300" r="180" stroke="currentColor" strokeWidth="1.5" />
@@ -87,11 +99,19 @@ export default function HomePage() {
         </div>
 
         {/* Dynamic ECG Heartbeat Waveform in Hero Background */}
-        <div className="absolute bottom-4 inset-x-0 h-28 opacity-10 pointer-events-none overflow-hidden">
+        <div className="absolute bottom-2 inset-x-0 h-32 opacity-25 pointer-events-none overflow-hidden">
           <svg className="w-full h-full text-teal-400" viewBox="0 0 1200 100" fill="none" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="heroEcgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#818cf8" stopOpacity="0.1" />
+                <stop offset="30%" stopColor="#22d3ee" stopOpacity="0.8" />
+                <stop offset="70%" stopColor="#2dd4bf" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#6366f1" stopOpacity="0.1" />
+              </linearGradient>
+            </defs>
             <path
               d="M0 50 H300 L320 25 L340 75 L360 5 L380 95 L400 40 L415 55 L430 50 H750 L770 20 L790 80 L810 0 L830 100 L850 45 L865 60 L880 50 H1200"
-              stroke="currentColor"
+              stroke="url(#heroEcgGrad)"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -102,6 +122,16 @@ export default function HomePage() {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
             <div className="max-w-2xl text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-400/30 backdrop-blur-md mb-6 text-xs text-indigo-200 shadow-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
+                </span>
+                <span className="font-semibold text-cyan-200">Digital Hospital 4.0</span>
+                <span className="text-white/30">•</span>
+                <span>Layanan Rawat Jalan & Farmasi Terintegrasi</span>
+              </div>
+
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15] text-white">
                 Layanan Kesehatan Terpadu,{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-indigo-200 to-sky-300">
@@ -116,7 +146,7 @@ export default function HomePage() {
               <div className="mt-8 flex flex-wrap gap-3.5 justify-center lg:justify-start">
                 <Link
                   href="/appointments/new"
-                  className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-[0_4px_20px_-4px_rgba(99,102,241,0.5)] transition-all flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-teal-500 hover:from-indigo-500 hover:to-teal-400 text-white font-bold text-sm shadow-[0_4px_25px_-4px_rgba(99,102,241,0.6)] transition-all flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
                 >
                   <CalendarIcon className="w-4 h-4" />
                   <span>Buat Janji Sekarang</span>
@@ -124,29 +154,29 @@ export default function HomePage() {
 
                 <Link
                   href="/login"
-                  className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-semibold text-sm border border-white/15 backdrop-blur-md transition-all flex items-center gap-2 cursor-pointer"
+                  className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-semibold text-sm border border-white/20 backdrop-blur-md transition-all flex items-center gap-2 cursor-pointer hover:border-cyan-400/40"
                 >
                   <span>Masuk / Tamu</span>
-                  <span className="text-slate-400">→</span>
+                  <span className="text-cyan-300">→</span>
                 </Link>
               </div>
 
               {/* Service micro guarantees */}
               <div className="mt-10 pt-6 border-t border-white/10 grid grid-cols-3 gap-4 text-left">
                 <div>
-                  <p className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                     <CheckCircleIcon className="w-4 h-4 text-emerald-400 shrink-0" /> Slot Pasti
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5">30 menit per janji</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                     <CheckCircleIcon className="w-4 h-4 text-teal-400 shrink-0" /> Anti-Bentrok
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5">Cek ganda otomatis</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                     <CheckCircleIcon className="w-4 h-4 text-sky-400 shrink-0" /> Farmasi Siaga
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5">Pelacakan obat terpadu</p>
@@ -156,31 +186,31 @@ export default function HomePage() {
 
             {/* Hero Interactive Stat Highlight */}
             <div className="w-full lg:w-auto shrink-0 grid grid-cols-2 gap-4 max-w-md">
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-center hover:bg-white/10 transition-colors">
-                <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-indigo-300">
+              <div className="group bg-slate-900/60 backdrop-blur-xl border border-white/15 p-6 rounded-3xl text-center hover:border-cyan-400/50 hover:bg-slate-900/80 hover:shadow-[0_10px_30px_-10px_rgba(34,211,238,0.3)] transition-all">
+                <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-indigo-300 group-hover:scale-105 transition-transform inline-block">
                   {polyclinics.length || '3'}
                 </div>
-                <div className="text-xs font-semibold text-slate-300 mt-2">Poli Spesialis</div>
+                <div className="text-xs font-semibold text-slate-200 mt-2">Poli Spesialis</div>
                 <p className="text-[11px] text-slate-400 mt-1">Layanan lengkap</p>
               </div>
 
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-center hover:bg-white/10 transition-colors">
-                <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-sky-300">
+              <div className="group bg-slate-900/60 backdrop-blur-xl border border-white/15 p-6 rounded-3xl text-center hover:border-indigo-400/50 hover:bg-slate-900/80 hover:shadow-[0_10px_30px_-10px_rgba(99,102,241,0.3)] transition-all">
+                <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-sky-300 group-hover:scale-105 transition-transform inline-block">
                   {doctors.length || '2'}
                 </div>
-                <div className="text-xs font-semibold text-slate-300 mt-2">Dokter Spesialis</div>
+                <div className="text-xs font-semibold text-slate-200 mt-2">Dokter Spesialis</div>
                 <p className="text-[11px] text-slate-400 mt-1">Berpengalaman</p>
               </div>
 
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-center hover:bg-white/10 transition-colors">
-                <div className="text-3xl font-black text-white">30 Min</div>
-                <div className="text-xs font-semibold text-slate-300 mt-2">Durasi Slot</div>
+              <div className="group bg-slate-900/60 backdrop-blur-xl border border-white/15 p-6 rounded-3xl text-center hover:border-teal-400/50 hover:bg-slate-900/80 hover:shadow-[0_10px_30px_-10px_rgba(45,212,191,0.3)] transition-all">
+                <div className="text-3xl font-black text-white group-hover:scale-105 transition-transform inline-block">30 Min</div>
+                <div className="text-xs font-semibold text-slate-200 mt-2">Durasi Slot</div>
                 <p className="text-[11px] text-slate-400 mt-1">Tepat & tertib</p>
               </div>
 
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-center hover:bg-white/10 transition-colors">
-                <div className="text-3xl font-black text-emerald-400">100%</div>
-                <div className="text-xs font-semibold text-slate-300 mt-2">Digital Paperless</div>
+              <div className="group bg-slate-900/60 backdrop-blur-xl border border-white/15 p-6 rounded-3xl text-center hover:border-emerald-400/50 hover:bg-slate-900/80 hover:shadow-[0_10px_30px_-10px_rgba(52,211,153,0.3)] transition-all">
+                <div className="text-3xl font-black text-emerald-400 group-hover:scale-105 transition-transform inline-block">100%</div>
+                <div className="text-xs font-semibold text-slate-200 mt-2">Digital Paperless</div>
                 <p className="text-[11px] text-slate-400 mt-1">Data aman terintegrasi</p>
               </div>
             </div>

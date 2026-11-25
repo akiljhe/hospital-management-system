@@ -13,22 +13,22 @@ export async function GET(request) {
     const unreadOnly = searchParams.get('unread') === 'true';
 
     let sql = `
-      SELECT id, user_id, judul, judul as title, pesan, pesan as message, 
-             sudah_dibaca, sudah_dibaca as is_read, link, created_at
-      FROM notifikasi
+      SELECT id, user_id, title as judul, title, message as pesan, message, 
+             is_read as sudah_dibaca, is_read, link, created_at
+      FROM notifications
       WHERE user_id = $1
     `;
     const params = [auth.user.id];
 
     if (unreadOnly) {
-      sql += ' AND sudah_dibaca = false';
+      sql += ' AND is_read = false';
     }
 
     sql += ' ORDER BY created_at DESC LIMIT 50';
 
     const result = await query(sql, params);
     const unreadCountResult = await query(
-      'SELECT COUNT(*) as count FROM notifikasi WHERE user_id = $1 AND sudah_dibaca = false',
+      'SELECT COUNT(*) as count FROM notifications WHERE user_id = $1 AND is_read = false',
       [auth.user.id]
     );
 
@@ -54,10 +54,10 @@ export async function POST(request) {
     const { ids, all } = body;
 
     if (all) {
-      await query('UPDATE notifikasi SET sudah_dibaca = true WHERE user_id = $1', [auth.user.id]);
+      await query('UPDATE notifications SET is_read = true WHERE user_id = $1', [auth.user.id]);
     } else if (Array.isArray(ids) && ids.length > 0) {
       await query(
-        'UPDATE notifikasi SET sudah_dibaca = true WHERE user_id = $1 AND id = ANY($2)',
+        'UPDATE notifications SET is_read = true WHERE user_id = $1 AND id = ANY($2)',
         [auth.user.id, ids]
       );
     }

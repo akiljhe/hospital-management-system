@@ -12,45 +12,50 @@ export async function GET(request) {
     }
 
     let sql = `
-      SELECT rm.id, rm.janji_temu_id, rm.pasien_id, rm.dokter_id,
-             rm.diagnosis, rm.tindakan_medis, rm.tindakan_medis as tindakan, rm.catatan, rm.created_at,
-             u_pat.nama_lengkap as patient_name, u_pat.telepon as patient_phone,
-             u_doc.nama_lengkap as doctor_name,
-             p.nama_poli as polyclinic_name,
-             jt.tanggal_booking as appointment_date,
+      SELECT rm.id, rm.appointment_id as janji_temu_id, rm.appointment_id, rm.patient_id as pasien_id, rm.doctor_id as dokter_id,
+             rm.diagnosis, rm.treatment as tindakan_medis, rm.treatment as tindakan, rm.notes as catatan, rm.created_at,
+             u_pat.name as patient_name, u_pat.name as nama_pasien, u_pat.phone as patient_phone,
+             u_doc.name as doctor_name, u_doc.name as nama_dokter,
+             p.name as polyclinic_name, p.name as nama_poli,
+             a.appointment_date as tanggal_booking, a.appointment_date,
              r.id as prescription_id, r.status as prescription_status,
              COALESCE(
                json_agg(
                  json_build_object(
-                   'id', ri.id,
-                   'obat_id', ri.obat_id,
-                   'nama_obat', o.nama_obat,
-                   'jumlah', ri.jumlah,
-                   'tipe', o.tipe
+                   'id', pi.id,
+                   'obat_id', pi.medicine_id,
+                   'medicine_id', pi.medicine_id,
+                   'nama_obat', m.name,
+                   'name', m.name,
+                   'jumlah', pi.quantity,
+                   'quantity', pi.quantity,
+                   'tipe', m.type,
+                   'type', m.type
                  )
-               ) FILTER (WHERE ri.id IS NOT NULL), '[]'
+               ) FILTER (WHERE pi.id IS NOT NULL), '[]'
              ) as prescription_items
-      FROM rekam_medis rm
-      JOIN users u_pat ON rm.pasien_id = u_pat.id
-      JOIN users u_doc ON rm.dokter_id = u_doc.id
-      JOIN dokter d ON rm.dokter_id = d.user_id
-      LEFT JOIN poli p ON d.poli_id = p.id
-      JOIN janji_temu jt ON rm.janji_temu_id = jt.id
-      LEFT JOIN resep r ON r.rekam_medis_id = rm.id
-      LEFT JOIN resep_item ri ON ri.resep_id = r.id
-      LEFT JOIN obat o ON ri.obat_id = o.id
+      FROM medical_records rm
+      JOIN patients pat ON rm.patient_id = pat.id
+      JOIN users u_pat ON pat.user_id = u_pat.id
+      JOIN doctors d ON rm.doctor_id = d.id
+      JOIN users u_doc ON d.user_id = u_doc.id
+      LEFT JOIN polyclinics p ON d.polyclinic_id = p.id
+      JOIN appointments a ON rm.appointment_id = a.id
+      LEFT JOIN prescriptions r ON r.medical_record_id = rm.id
+      LEFT JOIN prescription_items pi ON pi.prescription_id = r.id
+      LEFT JOIN medicines m ON pi.medicine_id = m.id
     `;
     const params = [];
 
     if (auth.user.role === 'dokter') {
       params.push(auth.user.id);
-      sql += ` WHERE rm.dokter_id = $${params.length}`;
+      sql += ` WHERE d.user_id = $${params.length}`;
     } else if (auth.user.role === 'pasien') {
       params.push(auth.user.id);
-      sql += ` WHERE rm.pasien_id = $${params.length}`;
+      sql += ` WHERE pat.user_id = $${params.length}`;
     }
 
-    sql += ` GROUP BY rm.id, u_pat.nama_lengkap, u_pat.telepon, u_doc.nama_lengkap, p.nama_poli, jt.tanggal_booking, r.id, r.status
+    sql += ` GROUP BY rm.id, u_pat.name, u_pat.phone, u_doc.name, p.name, a.appointment_date, r.id, r.status
              ORDER BY rm.created_at DESC`;
 
     const result = await query(sql, params);
@@ -88,7 +93,10 @@ export async function POST(request) {
 
     // Verify appointment exists, is Approved, and belongs to this doctor
     const appointmentResult = await query(
-      'SELECT * FROM janji_temu WHERE id = $1',
+      `SELECT a.*, d.user_id as doctor_user_id 
+       FROM appointments a
+       JOIN doctors d ON a.doctor_id = d.id
+       WHERE a.id = $1`,
       [janji_temu_id]
     );
 
@@ -98,7 +106,7 @@ export async function POST(request) {
 
     const appointment = appointmentResult.rows[0];
 
-    if (appointment.dokter_id !== auth.user.id) {
+    if (appointment.doctor_user_id !== auth.user.id) {
       return NextResponse.json({ error: 'Anda hanya dapat menulis rekam medis untuk janji temu Anda sendiri' }, { status: 403 });
     }
 
@@ -111,7 +119,7 @@ export async function POST(request) {
 
     // Check if record already exists
     const existing = await query(
-      'SELECT id FROM rekam_medis WHERE janji_temu_id = $1',
+      'SELECT id FROM medical_records WHERE appointment_id = $1',
       [janji_temu_id]
     );
     if (existing.rows.length > 0) {
@@ -123,19 +131,19 @@ export async function POST(request) {
     try {
       await client.query('BEGIN');
 
-      // 1. Insert rekam_medis (trigger will set janji_temu status to 'Selesai' and create resep)
+      // 1. Insert medical_records (trigger will set appointments status to 'Selesai' and auto-create prescriptions)
       const recordResult = await client.query(
-        `INSERT INTO rekam_medis (janji_temu_id, pasien_id, dokter_id, diagnosis, tindakan_medis, catatan)
+        `INSERT INTO medical_records (appointment_id, patient_id, doctor_id, diagnosis, treatment, notes)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [janji_temu_id, appointment.pasien_id, auth.user.id, diagnosis, tindakan_medis, catatan || null]
+        [janji_temu_id, appointment.patient_id, appointment.doctor_id, diagnosis, tindakan_medis, catatan || null]
       );
 
       const record = recordResult.rows[0];
 
       // 2. Fetch the auto-created prescription
       const resepResult = await client.query(
-        'SELECT id FROM resep WHERE rekam_medis_id = $1',
+        'SELECT id FROM prescriptions WHERE medical_record_id = $1',
         [record.id]
       );
 
@@ -145,16 +153,17 @@ export async function POST(request) {
         for (const item of prescription_items) {
           const obat_id = item.obat_id || item.medicine_id;
           const jumlah = parseInt(item.jumlah || item.quantity || 1, 10);
+          const dosage = item.dosage || item.dosis || '1x sehari sesudah makan';
 
           if (obat_id && jumlah > 0) {
             // Pastikan obat ada
-            const checkObat = await client.query('SELECT id FROM obat WHERE id = $1', [obat_id]);
+            const checkObat = await client.query('SELECT id FROM medicines WHERE id = $1', [obat_id]);
             if (checkObat.rows.length > 0) {
               await client.query(
-                `INSERT INTO resep_item (resep_id, obat_id, jumlah)
-                 VALUES ($1, $2, $3)
-                 ON CONFLICT (resep_id, obat_id) DO NOTHING`,
-                [resep_id, obat_id, jumlah]
+                `INSERT INTO prescription_items (prescription_id, medicine_id, quantity, dosage)
+                 VALUES ($1, $2, $3, $4)
+                 ON CONFLICT (prescription_id, medicine_id) DO NOTHING`,
+                [resep_id, obat_id, jumlah, dosage]
               );
             }
           }

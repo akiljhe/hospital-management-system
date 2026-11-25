@@ -7,8 +7,8 @@ export async function GET(request, { params }) {
   try {
     const { id } = await params;
     const result = await query(
-      `SELECT id, nama_poli, nama_poli as name, deskripsi, deskripsi as description, ikon, ikon as icon 
-       FROM poli WHERE id = $1`,
+      `SELECT id, name, name as nama_poli, description, description as deskripsi, icon, icon as ikon 
+       FROM polyclinics WHERE id = $1`,
       [id]
     );
 
@@ -42,10 +42,10 @@ export async function PUT(request, { params }) {
     }
 
     const result = await query(
-      `UPDATE poli
-       SET nama_poli = $1, deskripsi = $2, ikon = $3
+      `UPDATE polyclinics
+       SET name = $1, description = $2, icon = $3
        WHERE id = $4
-       RETURNING id, nama_poli, nama_poli as name, deskripsi, deskripsi as description, ikon, ikon as icon`,
+       RETURNING id, name, name as nama_poli, description, description as deskripsi, icon, icon as ikon`,
       [nama_poli, deskripsi, ikon, id]
     );
 
@@ -70,7 +70,7 @@ export async function DELETE(request, { params }) {
     const { id } = await params;
 
     // Check if doctors are assigned to this poli
-    const checkDoctors = await query('SELECT user_id FROM dokter WHERE poli_id = $1 LIMIT 1', [id]);
+    const checkDoctors = await query('SELECT id FROM doctors WHERE polyclinic_id = $1 LIMIT 1', [id]);
     if (checkDoctors.rows.length > 0) {
       return NextResponse.json(
         { error: 'Poli tidak dapat dihapus karena masih ada dokter yang bertugas di poli ini' },
@@ -78,7 +78,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const result = await query('DELETE FROM poli WHERE id = $1 RETURNING id', [id]);
+    const result = await query('DELETE FROM polyclinics WHERE id = $1 RETURNING id', [id]);
 
     if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Poliklinik tidak ditemukan' }, { status: 404 });

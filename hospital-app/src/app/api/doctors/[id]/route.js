@@ -6,28 +6,29 @@ export async function GET(request, { params }) {
     const { id } = await params;
 
     const result = await query(
-      `SELECT d.user_id as id, d.user_id as doctor_id, d.poli_id,
-              u.nama_lengkap as name, u.nama_lengkap, u.email, u.telepon as phone, u.telepon, u.alamat,
-              p.nama_poli, p.nama_poli as polyclinic_name, p.ikon,
+      `SELECT d.id as doctor_id, d.id, d.user_id, d.polyclinic_id, d.specialization,
+              u.name, u.name as nama_lengkap, u.email, u.phone, u.phone as telepon, u.address, u.address as alamat,
+              p.name as polyclinic_name, p.name as nama_poli, p.icon as ikon,
               COALESCE(
                 json_agg(
                   json_build_object(
-                    'id', jd.id,
-                    'day', jd.hari,
-                    'hari', jd.hari,
-                    'start_time', jd.jam_mulai,
-                    'jam_mulai', jd.jam_mulai,
-                    'end_time', jd.jam_selesai,
-                    'jam_selesai', jd.jam_selesai
-                  ) ORDER BY jd.hari, jd.jam_mulai
-                ) FILTER (WHERE jd.id IS NOT NULL), '[]'
+                    'id', ds.id,
+                    'day', ds.day,
+                    'hari', ds.day,
+                    'start_time', ds.start_time,
+                    'jam_mulai', ds.start_time,
+                    'end_time', ds.end_time,
+                    'jam_selesai', ds.end_time,
+                    'is_active', ds.is_active
+                  ) ORDER BY ds.day, ds.start_time
+                ) FILTER (WHERE ds.id IS NOT NULL), '[]'
               ) as schedules
-       FROM dokter d
+       FROM doctors d
        JOIN users u ON d.user_id = u.id
-       LEFT JOIN poli p ON d.poli_id = p.id
-       LEFT JOIN jadwal_dokter jd ON jd.dokter_id = d.user_id
-       WHERE d.user_id = $1
-       GROUP BY d.user_id, d.poli_id, u.nama_lengkap, u.email, u.telepon, u.alamat, p.nama_poli, p.ikon`,
+       LEFT JOIN polyclinics p ON d.polyclinic_id = p.id
+       LEFT JOIN doctor_schedules ds ON ds.doctor_id = d.id
+       WHERE d.id::text = $1 OR d.user_id::text = $1
+       GROUP BY d.id, d.user_id, d.polyclinic_id, d.specialization, u.name, u.email, u.phone, u.address, p.name, p.icon`,
       [id]
     );
 

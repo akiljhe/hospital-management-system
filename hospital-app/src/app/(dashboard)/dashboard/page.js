@@ -58,30 +58,49 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header Greeting Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950/90 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-indigo-950/20 border border-indigo-500/20">
+      <div className="relative overflow-hidden bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-2xl shadow-indigo-950/40 border border-indigo-500/30 ring-1 ring-white/10">
         {/* Top Border Glow Lightbeam */}
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_rgba(34,211,238,0.8)]" />
 
-        {/* Ambient Gradient Glows */}
-        <div className="absolute -top-24 -right-12 w-96 h-96 bg-indigo-500/25 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-12 w-80 h-80 bg-teal-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-cyan-400/10 rounded-full blur-2xl pointer-events-none" />
+        {/* Ambient Vibrant Glows */}
+        <div className="absolute -top-24 -right-12 w-96 h-96 bg-indigo-500/30 rounded-full blur-[90px] pointer-events-none" />
+        <div className="absolute -bottom-24 -left-12 w-80 h-80 bg-teal-500/20 rounded-full blur-[80px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/3 w-72 h-72 bg-cyan-400/15 rounded-full blur-[100px] pointer-events-none" />
 
-        {/* Medical Grid Pattern Overlay */}
+        {/* High-Tech Grid & Dot Pattern */}
         <div 
-          className="absolute inset-0 opacity-[0.14] pointer-events-none mix-blend-screen"
+          className="absolute inset-0 opacity-[0.22] pointer-events-none mix-blend-screen"
           style={{
-            backgroundImage: `radial-gradient(circle at center, rgba(14, 165, 233, 0.5) 1.5px, transparent 1.5px), linear-gradient(to right, rgba(99, 102, 241, 0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.12) 1px, transparent 1px)`,
-            backgroundSize: `24px 24px, 24px 24px, 24px 24px`
+            backgroundImage: `radial-gradient(circle at center, rgba(56, 189, 248, 0.7) 1.5px, transparent 1.5px), linear-gradient(to right, rgba(99, 102, 241, 0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.2) 1px, transparent 1px)`,
+            backgroundSize: `28px 28px, 28px 28px, 28px 28px`
           }}
         />
 
-        {/* Subtle ECG Heartbeat Pulse Line Graphic */}
-        <div className="absolute right-0 bottom-0 h-32 w-80 sm:w-96 opacity-15 pointer-events-none overflow-hidden">
-          <svg className="w-full h-full text-cyan-400" viewBox="0 0 400 120" fill="none" preserveAspectRatio="none">
+        {/* Decorative Floating Medical Cross Watermarks */}
+        <div className="absolute right-36 -top-6 w-24 h-24 opacity-[0.08] pointer-events-none text-cyan-300">
+          <svg viewBox="0 0 100 100" fill="currentColor">
+            <path d="M38 10 H62 V38 H90 V62 H62 V90 H38 V62 H10 V38 H38 Z" />
+          </svg>
+        </div>
+        <div className="absolute right-6 -bottom-8 w-36 h-36 opacity-[0.06] pointer-events-none text-indigo-300">
+          <svg viewBox="0 0 100 100" fill="currentColor">
+            <path d="M38 10 H62 V38 H90 V62 H62 V90 H38 V62 H10 V38 H38 Z" />
+          </svg>
+        </div>
+
+        {/* Vivid ECG Heartbeat Waveform */}
+        <div className="absolute right-0 bottom-0 h-28 w-80 sm:w-[420px] opacity-35 pointer-events-none overflow-hidden">
+          <svg className="w-full h-full text-cyan-400" viewBox="0 0 420 100" fill="none" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="ecgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#818cf8" stopOpacity="0.2" />
+                <stop offset="50%" stopColor="#22d3ee" stopOpacity="1" />
+                <stop offset="100%" stopColor="#2dd4bf" stopOpacity="0.4" />
+              </linearGradient>
+            </defs>
             <path
-              d="M0 60 H140 L155 35 L170 85 L185 15 L200 105 L215 50 L225 65 L235 60 H400"
-              stroke="currentColor"
+              d="M0 50 H160 L175 25 L190 75 L205 8 L220 92 L235 42 L245 58 L255 50 H420"
+              stroke="url(#ecgGrad)"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -91,13 +110,19 @@ export default function DashboardPage() {
 
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs text-slate-400">{todayFormatted}</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-md mb-3 text-xs text-slate-200">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-400"></span>
+              </span>
+              <span className="font-medium">{todayFormatted}</span>
+              <span className="text-white/30">•</span>
+              <span className="text-cyan-300 font-semibold uppercase tracking-wider text-[10px]">Sistem Online</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Selamat Datang, {user.nama_lengkap || user.name}!
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+              <span>Selamat Datang, {user.nama_lengkap || user.name}!</span>
             </h1>
-            <p className="text-slate-300 text-xs sm:text-sm mt-1 max-w-xl">
+            <p className="text-slate-300 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
               {role === 'admin' && 'Kelola seluruh operasional rumah sakit: pengguna, jadwal dokter, verifikasi janji, dan antrean farmasi.'}
               {role === 'dokter' && 'Pantau antrean janji temu approved hari ini, input rekam medis pasien, dan kelola jadwal praktik.'}
               {role === 'pasien' && 'Pantau janji temu dokter, status persiapan resep obat Anda, dan riwayat rekam medis digital.'}
@@ -108,7 +133,7 @@ export default function DashboardPage() {
             {role === 'pasien' && (
               <Link
                 href="/appointments/new"
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-teal-500 hover:from-indigo-500 hover:to-teal-400 text-white font-bold text-xs shadow-lg shadow-indigo-900/50 hover:shadow-indigo-500/30 transition-all flex items-center gap-2"
               >
                 <CalendarIcon className="w-4 h-4" />
                 <span>Buat Janji Baru</span>
@@ -117,7 +142,7 @@ export default function DashboardPage() {
             {role === 'dokter' && (
               <Link
                 href="/schedules"
-                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/15 transition-all flex items-center gap-2"
+                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/15 backdrop-blur-md transition-all flex items-center gap-2"
               >
                 <ClockIcon className="w-4 h-4" />
                 <span>Atur Jadwal 30 Menit</span>
@@ -126,7 +151,7 @@ export default function DashboardPage() {
             {role === 'admin' && (
               <Link
                 href="/appointments"
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-all flex items-center gap-2"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs shadow-lg shadow-indigo-900/50 hover:shadow-indigo-500/30 transition-all flex items-center gap-2"
               >
                 <CheckIcon className="w-4 h-4" />
                 <span>Verifikasi Janji</span>
