@@ -72,8 +72,8 @@ export default function HomePage() {
         <div 
           className="absolute inset-0 opacity-[0.22] pointer-events-none mix-blend-screen"
           style={{
-            backgroundImage: `radial-gradient(circle at center, rgba(56, 189, 248, 0.7) 1.5px, transparent 1.5px), linear-gradient(to right, rgba(99, 102, 241, 0.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.22) 1px, transparent 1px)`,
-            backgroundSize: `36px 36px, 36px 36px, 36px 36px`
+            backgroundImage: `linear-gradient(to right, rgba(99, 102, 241, 0.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.22) 1px, transparent 1px)`,
+            backgroundSize: `36px 36px, 36px 36px`
           }}
         />
 
@@ -123,10 +123,6 @@ export default function HomePage() {
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
             <div className="max-w-2xl text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-400/30 backdrop-blur-md mb-6 text-xs text-indigo-200 shadow-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
-                </span>
                 <span className="font-semibold text-cyan-200">Digital Hospital 4.0</span>
                 <span className="text-white/30">•</span>
                 <span>Layanan Rawat Jalan & Farmasi Terintegrasi</span>

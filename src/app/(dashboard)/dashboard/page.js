@@ -67,12 +67,12 @@ export default function DashboardPage() {
         <div className="absolute -bottom-24 -left-12 w-80 h-80 bg-teal-500/20 rounded-full blur-[80px] pointer-events-none" />
         <div className="absolute top-1/2 left-1/3 w-72 h-72 bg-cyan-400/15 rounded-full blur-[100px] pointer-events-none" />
 
-        {/* High-Tech Grid & Dot Pattern */}
+        {/* High-Tech Grid Pattern */}
         <div 
           className="absolute inset-0 opacity-[0.22] pointer-events-none mix-blend-screen"
           style={{
-            backgroundImage: `radial-gradient(circle at center, rgba(56, 189, 248, 0.7) 1.5px, transparent 1.5px), linear-gradient(to right, rgba(99, 102, 241, 0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.2) 1px, transparent 1px)`,
-            backgroundSize: `28px 28px, 28px 28px, 28px 28px`
+            backgroundImage: `linear-gradient(to right, rgba(99, 102, 241, 0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.2) 1px, transparent 1px)`,
+            backgroundSize: `28px 28px, 28px 28px`
           }}
         />
 
@@ -111,10 +111,6 @@ export default function DashboardPage() {
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-md mb-3 text-xs text-slate-200">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-400"></span>
-              </span>
               <span className="font-medium">{todayFormatted}</span>
               <span className="text-white/30">•</span>
               <span className="text-cyan-300 font-semibold uppercase tracking-wider text-[10px]">Sistem Online</span>

@@ -97,7 +97,6 @@ export default function DashboardLayout({ children, initialUser = null }) {
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="h-2 w-2 shrink-0 rounded-full bg-indigo-500 ring-4 ring-indigo-500/15" />
             <p className="truncate text-sm font-semibold text-slate-700">
               RS Digital Sehat <span className="text-slate-300">•</span>{' '}
               <span className="font-medium text-slate-500">Sistem Layanan Terpadu</span>
